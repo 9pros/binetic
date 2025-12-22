@@ -2,12 +2,14 @@ import React from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { User, Shield, Bell, Palette, Cpu, Zap, Save, AlertTriangle } from 'lucide-react';
+import { User, Shield, Bell, Palette, Cpu, Zap, Save, AlertTriangle, BrainCircuit, Bot } from 'lucide-react';
 import { ProfileSection } from '@/components/settings/ProfileSection';
 import { SecuritySection } from '@/components/settings/SecuritySection';
 import { AppearanceSection } from '@/components/settings/AppearanceSection';
 import { APIDocumentation } from '@/components/settings/APIDocumentation';
 import { DangerZone } from '@/components/settings/DangerZone';
+import { AIConfigSection } from '@/components/settings/AIConfigSection';
+import { AgentsConfigSection } from '@/components/settings/AgentsConfigSection';
 import { toast } from 'sonner';
 export default function SettingsPage() {
   const handleGlobalSave = () => {
@@ -34,6 +36,8 @@ export default function SettingsPage() {
           <Tabs defaultValue="profile" className="space-y-8">
             <TabsList className="bg-white/5 border border-white/10 p-1 h-12 flex items-center justify-start overflow-x-auto overflow-y-hidden custom-scrollbar">
               <TabsTrigger value="profile" className="flex gap-2 data-[state=active]:bg-indigo-600 data-[state=active]:text-white"><User size={14}/> Profile</TabsTrigger>
+              <TabsTrigger value="ai-models" className="flex gap-2 data-[state=active]:bg-indigo-600 data-[state=active]:text-white"><BrainCircuit size={14}/> AI Models</TabsTrigger>
+              <TabsTrigger value="agents" className="flex gap-2 data-[state=active]:bg-indigo-600 data-[state=active]:text-white"><Bot size={14}/> Agents</TabsTrigger>
               <TabsTrigger value="security" className="flex gap-2 data-[state=active]:bg-indigo-600 data-[state=active]:text-white"><Shield size={14}/> Security</TabsTrigger>
               <TabsTrigger value="appearance" className="flex gap-2 data-[state=active]:bg-indigo-600 data-[state=active]:text-white"><Palette size={14}/> Interface</TabsTrigger>
               <TabsTrigger value="api" className="flex gap-2 data-[state=active]:bg-indigo-600 data-[state=active]:text-white"><Zap size={14}/> API & Docs</TabsTrigger>
@@ -41,6 +45,12 @@ export default function SettingsPage() {
             </TabsList>
             <TabsContent value="profile" className="space-y-6">
               <ProfileSection />
+            </TabsContent>
+            <TabsContent value="ai-models" className="space-y-6">
+              <AIConfigSection />
+            </TabsContent>
+            <TabsContent value="agents" className="space-y-6">
+              <AgentsConfigSection />
             </TabsContent>
             <TabsContent value="security" className="space-y-6">
               <SecuritySection />

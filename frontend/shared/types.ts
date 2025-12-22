@@ -232,3 +232,19 @@ export interface ApprovalRequest {
   reviewedBy?: string;
   reviewedAt?: string;
 }
+export interface AgentOverride {
+  model?: string;
+  contextWindow?: number;
+  maxOutput?: number;
+  systemPrompt?: string;
+}
+
+export interface SystemConfig {
+  id: string;
+  llm: {
+    baseUrl: string;
+    apiKey: string;
+    defaultModelId: string;
+  };
+  agentOverrides: Record<string, AgentOverride>;
+}

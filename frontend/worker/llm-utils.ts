@@ -1,5 +1,6 @@
 
 import { Env } from './core-utils';
+import { SystemConfigEntity } from './entities';
 
 export interface LLMMessage {
   role: 'system' | 'user' | 'assistant';
@@ -90,23 +91,23 @@ export async function callLLM(
   agent: AgentConfig, 
   messages: LLMMessage[]
 ): Promise<string> {
-  // In a real deployment, these would be separate env vars. 
-  // For now, we assume a unified OpenAI-compatible gateway or specific keys.
-  let apiKey = env.QWEN_API_KEY;
-  let baseURL = "https://dashscope.aliyuncs.com/compatible-mode/v1";
+  // Fetch system config
+  const configEntity = new SystemConfigEntity(env, 'sys-config');
+  let config = await configEntity.getState().catch(() => null);
+  
+  // Fallback defaults if config fails or doesn't exist
+  let apiKey = config?.llm?.apiKey || "";
+  let baseURL = config?.llm?.baseUrl || "https://apis.iflow.cn/v1";
+  let model = config?.llm?.defaultModelId || agent.model;
 
-  if (agent.provider === 'glm') {
-    apiKey = env.GLM_API_KEY;
-    baseURL = "https://open.bigmodel.cn/api/paas/v4";
-  } else if (agent.provider === 'deepseek') {
-    apiKey = env.DEEPSEEK_API_KEY;
-    baseURL = "https://api.deepseek.com/v1";
-  }
+  // Check for agent overrides
+  const override = config?.agentOverrides?.[agent.id];
+  if (override?.model) model = override.model;
 
   // Fallback/Mock if no keys (for dev safety)
   if (!apiKey) {
-    console.warn(`[LLM] No API key for ${agent.provider}. Returning mock response.`);
-    return `[MOCK] ${agent.name} received your message. (Configure ${agent.provider.toUpperCase()}_API_KEY to enable real inference)`;
+    console.warn(`[LLM] No API key configured. Returning mock response.`);
+    return `[MOCK] ${agent.name} received your message. (Configure API Key in Settings > AI Models to enable real inference)`;
   }
 
   try {
@@ -117,7 +118,7 @@ export async function callLLM(
         'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: agent.model,
+        model: model,
         messages: messages,
         max_tokens: agent.maxOutput,
         temperature: 0.7

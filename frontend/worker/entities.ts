@@ -6,7 +6,7 @@ import { IndexedEntity } from "./core-utils";
 import type { 
   User, Chat, ChatMessage, ApiKey, SafetyPolicy, 
   OperatorProfile, AuditLog, NetworkSlot, MemoryCluster,
-  DiscoverySource, DiscoveryCapability, BrainState
+  DiscoverySource, DiscoveryCapability, BrainState, SystemConfig
 } from "@shared/types";
 
 // ============================================================================
@@ -374,4 +374,20 @@ export class ApprovalEntity extends IndexedEntity<ApprovalRequest> {
       createdAt: new Date().toISOString()
     }
   ];
+}
+
+// SYSTEM CONFIG ENTITY
+export class SystemConfigEntity extends IndexedEntity<SystemConfig> {
+  static readonly entityName = "systemconfig";
+  static readonly indexName = "systemconfigs";
+  static readonly initialState: SystemConfig = {
+    id: "sys-config",
+    llm: {
+      baseUrl: "https://apis.iflow.cn/v1",
+      apiKey: "",
+      defaultModelId: "glm-4.6"
+    },
+    agentOverrides: {}
+  };
+  static seedData: SystemConfig[] = [SystemConfigEntity.initialState];
 }

@@ -7,7 +7,7 @@ import type { Env } from './core-utils';
 import { 
   UserEntity, ChatBoardEntity, ApiKeyEntity, PolicyEntity,
   OperatorEntity, AuditLogEntity, NetworkSlotEntity, MemoryClusterEntity,
-  DiscoverySourceEntity, DiscoveryCapabilityEntity, BrainEntity, ApprovalEntity
+  DiscoverySourceEntity, DiscoveryCapabilityEntity, BrainEntity, ApprovalEntity, SystemConfigEntity
 } from "./entities";
 import { ok, bad, notFound, isStr } from './core-utils';
 import { authMiddleware, handleLogin, handleVerify, handleLogout, getAuth } from './auth';
@@ -147,7 +147,8 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
       duration: data.duration || 0
     };
     await AuditLogEntity.create(c.env, log);
-    r
+    return ok(c, log);
+  });
 
   app.get('/api/keys/:id/usage', (c) => {
     // Generate usage stats for the key
@@ -200,7 +201,6 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     
     await app.patch(data);
     return ok(c, await app.getState());
-  });eturn ok(c, log);
   });
 
   // =========================================================================
@@ -692,5 +692,24 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
       models: 7,
       timestamp: new Date().toISOString(),
     });
+  });
+
+  // =========================================================================
+  // SYSTEM CONFIGURATION
+  // =========================================================================
+  app.get('/api/config', async (c) => {
+    await SystemConfigEntity.ensureSeed(c.env);
+    const config = new SystemConfigEntity(c.env, 'sys-config');
+    if (!await config.exists()) return notFound(c, 'Config not found');
+    return ok(c, await config.getState());
+  });
+
+  app.post('/api/config', async (c) => {
+    const data = await c.req.json();
+    const config = new SystemConfigEntity(c.env, 'sys-config');
+    await config.ensure();
+    const current = await config.getState();
+    await config.save({ ...current, ...data });
+    return ok(c, await config.getState());
   });
 }

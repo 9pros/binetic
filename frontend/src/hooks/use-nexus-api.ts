@@ -15,6 +15,7 @@ export const nexusKeys = {
   memory: () => [...nexusKeys.all, 'memory'] as const,
   brain: () => [...nexusKeys.all, 'brain'] as const,
   approvals: () => [...nexusKeys.all, 'approvals'] as const,
+  config: () => [...nexusKeys.all, 'config'] as const,
 };
 
 // === CHARTS & ANALYTICS ===
@@ -313,5 +314,23 @@ export function useOrchestrateChat() {
         method: 'POST',
         body: JSON.stringify(payload),
       }),
+  });
+}
+// === SYSTEM CONFIG ===
+export function useSystemConfig() {
+  return useQuery({
+    queryKey: nexusKeys.config(),
+    queryFn: () => api<Types.SystemConfig>('/config'),
+  });
+}
+
+export function useUpdateSystemConfig() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: Partial<Types.SystemConfig>) => api<Types.SystemConfig>('/config', { method: 'POST', body: JSON.stringify(data) }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: nexusKeys.config() });
+      toast.success('Configuration Updated');
+    }
   });
 }
