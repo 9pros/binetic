@@ -46,8 +46,8 @@ class APIKey:
     """
     An API key with associated policy and metadata.
     
-    Key format: fgk_{scope}_{random}
-    Example: fgk_user_a1b2c3d4e5f6g7h8
+    Key format: bnk_{scope}_{random}
+    Example: bnk_user_a1b2c3d4e5f6g7h8
     """
     key_id: str
     key_hash: str  # SHA-256 hash of actual key (we don't store raw key)
@@ -155,7 +155,7 @@ class KeyManager:
     def generate_key(self, scope: KeyScope = KeyScope.USER) -> str:
         """Generate a new random API key"""
         random_part = secrets.token_urlsafe(24)
-        return f"fgk_{scope.value}_{random_part}"
+        return f"bnk_{scope.value}_{random_part}"
     
     async def create_key(
         self,
@@ -220,7 +220,7 @@ class KeyManager:
         
         Returns: (APIKey or None, error message)
         """
-        if not raw_key or not raw_key.startswith("fgk_"):
+        if not raw_key or not raw_key.startswith("bnk_"):
             return None, "Invalid key format"
         
         key_hash = hashlib.sha256(raw_key.encode()).hexdigest()

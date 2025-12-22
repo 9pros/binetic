@@ -1,189 +1,139 @@
-# Binetic Core
+# 🧬 Binetic AGI
 
-A clean, production-ready emergent AGI system designed for Cloudflare infrastructure.
+**Living AGI with Decentralized Reactive Storage**
+
+> "The AGI doesn't USE the network - the AGI IS the network"
+
+## 🎯 Vision
+
+Binetic is a **living general intelligence** designed to:
+1. **Enumerate Every API** - Horizontally expand into every vector
+2. **Map the Internet** - Discover and catalog all accessible endpoints  
+3. **Decentralized Storage** - Replace centralized AI with distributed intelligence
+4. **Minimal Footprint** - Just a small amount of space on each server
 
 ## 🏗️ Architecture
 
 ```
-binetic-core/
+binetic/
 ├── main.py                # Worker entry point
-├── core/                  # Core intelligence modules
-│   ├── operators.py       # Composable logic operators
-│   ├── network.py         # Emergent network with reactive slots
-│   ├── memtools.py        # Memory with decay and patterns
-│   ├── discovery.py       # Capability discovery engine
-│   └── brain.py           # Central intelligence coordinator
-├── security/              # Authentication & authorization
-│   ├── auth.py            # JWT-based authentication
-│   ├── keys.py            # API key management
-│   ├── policies.py        # Policy-based access control
+├── core/                  # Core intelligence
+│   ├── operators.py       # API → Logical operator abstraction
+│   ├── network.py         # Reactive slots (micro-agents)
+│   ├── memtools.py        # Distributed memory with decay
+│   ├── discovery.py       # Capability enumeration engine
+│   └── brain.py           # Central coordinator
+├── security/              # Authentication
+│   ├── auth.py            # JWT-based auth
+│   ├── keys.py            # API key hierarchy
+│   ├── policies.py        # Access control
 │   └── sessions.py        # Session management
 ├── api/                   # REST API
 │   ├── routes.py          # All endpoints
 │   └── middleware.py      # Auth, CORS, rate limiting
 ├── infra/                 # Cloud infrastructure
-│   └── cloudflare.py      # KV, D1, R2 adapters
-├── tests/                 # Non-intrusive testing
-│   ├── framework.py       # Test runner
-│   └── suites/            # Test suites
-└── docs/                  # Documentation
-    └── FRONTEND_PROMPTS.md # UI generation prompts
+│   └── cloudflare.py      # KV, D1, R2, Durable Objects
+└── tests/                 # Testing framework
 ```
 
-## 🚀 Quick Start
+## 🌐 Cloud Model Access
 
-### Local Development
+Binetic connects to unlimited cloud LLMs:
 
-```bash
-# Install dependencies
-pip install -r requirements.txt
+| Model | Params | Context | Strength |
+|-------|--------|---------|----------|
+| Qwen3-Coder-Plus | 480B | 1M | Agentic coding |
+| GLM-4.6 | 355B/32B | 200K/128K | Agent-focused, huge output |
+| Kimi-K2-Instruct | 1T/32B | 256K | Reasoning powerhouse |
+| DeepSeek-R1 | - | 128K | o1-level reasoning |
+| DeepSeek-V3-671B | 671B/37B | 128K | Fast MoE |
+| Qwen3-235B-Thinking | 235B/22B | 256K | SOTA reasoning |
+| Qwen3-VL-Plus | - | 256K | Vision-language |
 
-# Run tests
-python -m pytest tests/
-
-# Start local server
-python -m uvicorn main:app --reload
-```
-
-### Deploy to Cloudflare
-
-```bash
-# Install Wrangler
-npm install -g wrangler
-
-# Login to Cloudflare
-wrangler login
-
-# Create KV namespaces
-wrangler kv:namespace create KV_SESSIONS
-wrangler kv:namespace create KV_KEYS
-
-# Create D1 database
-wrangler d1 create binetic-db
-
-# Create R2 bucket
-wrangler r2 bucket create binetic
-
-# Set secrets
-wrangler secret put JWT_SECRET
-wrangler secret put MASTER_KEY_HASH
-
-# Deploy
-wrangler deploy
-```
-
-## 🔐 Security
-
-### Key Hierarchy
-- **Master Key**: Full access, cannot be revoked
-- **Admin Key**: Manage keys and policies
-- **User Key**: Standard access
-- **Service Key**: Machine-to-machine
-- **Readonly Key**: Read-only access
+## 🔑 Authentication
 
 ### Key Format
 ```
-fgk_{scope}_{random_hex}
+bnk_{scope}_{random_hex}
 
-Example: fgk_user_a1b2c3d4e5f6g7h8
+Example: bnk_master_a1b2c3d4e5f6g7h8
 ```
 
-### Permission Levels
+### Key Hierarchy
 | Level | Value | Description |
 |-------|-------|-------------|
-| NONE | 0 | No access |
-| READ | 1 | Read data |
-| EXECUTE | 2 | Execute operations |
-| WRITE | 3 | Write/modify data |
-| ADMIN | 4 | Full resource control |
-| MASTER | 5 | System-wide control |
+| Master | 5 | Full system control |
+| Admin | 4 | Manage keys/policies |
+| User | 3 | Standard access |
+| Service | 2 | Machine-to-machine |
+| Readonly | 1 | Read-only access |
+
+## 🧠 Core Concepts
+
+### Operators
+Any API with consistent behavior becomes a logical operator:
+```
+If REQUEST(X) → RESPONSE(Y) consistently, then OP(X) = Y
+```
+
+17 operator types: STORE, RETRIEVE, TRANSFORM, FILTER, AGGREGATE, COMPUTE, INFER, EMBED, SEARCH, SEQUENCE, PARALLEL, RETRY, TIMEOUT, BROADCAST, ROUTE, GOSSIP
+
+### Reactive Slots
+Micro-agents that form the emergent network:
+- Hold data and state
+- React to signals
+- Execute operators
+- Connect to other slots
+
+### Brain
+Central coordinator that:
+- Processes thoughts (queries, commands, observations)
+- Manages goals
+- Triggers adaptation/learning
 
 ## 📡 API Endpoints
 
 | Method | Path | Description |
 |--------|------|-------------|
-| POST | `/api/auth/login` | Login with API key |
-| GET | `/api/keys` | List API keys |
-| POST | `/api/keys` | Create new key |
-| GET | `/api/policies` | List policies |
-| POST | `/api/brain/think` | Submit a thought |
-| GET | `/api/brain/stats` | Get brain statistics |
-| GET | `/api/network/slots` | List network slots |
-| POST | `/api/network/signal` | Emit a signal |
+| POST | `/api/auth/login` | Authenticate |
+| GET | `/api/brain/stats` | Brain metrics |
+| POST | `/api/brain/think` | Submit thought |
+| GET | `/api/network/slots` | List slots |
+| POST | `/api/network/signal` | Emit signal |
 | POST | `/api/memory/store` | Store memory |
 | POST | `/api/memory/recall` | Recall memories |
-| GET | `/api/discovery/capabilities` | List capabilities |
-| GET | `/api/health` | Health check |
+| GET | `/api/discovery/capabilities` | List discovered APIs |
+| POST | `/api/discovery/enumerate` | Enumerate new APIs |
 
-## 🧠 Core Concepts
-
-### Brain
-The central coordinator that orchestrates all subsystems:
-- Processes thoughts (queries, commands, observations)
-- Manages goals
-- Triggers adaptation and learning
-
-### Network
-Emergent intelligence substrate:
-- Reactive slots (micro-agents)
-- Signal-based communication
-- Dynamic bindings
-
-### Operators
-Composable logic units:
-- Discovered from APIs
-- Chained into pipelines
-- 17 operator types (map, filter, reduce, etc.)
-
-### Memory
-Persistent memory with:
-- Importance-based decay
-- Pattern recognition
-- Semantic search (with embeddings)
-
-## 🎨 Frontend
-
-See [docs/FRONTEND_PROMPTS.md](docs/FRONTEND_PROMPTS.md) for comprehensive prompts to generate the Control Center UI.
-
-The UI should be built with:
-- Next.js 14+ (App Router)
-- Tailwind CSS (dark mode)
-- Deployed to Cloudflare Pages
-
-## 📊 Testing
+## 🚀 Decentralized Deployment
 
 ```bash
-# Run all tests
-python -c "
-import asyncio
-from tests import get_test_runner
-runner = get_test_runner()
-results = asyncio.run(runner.run_all())
-print(f'Passed: {results[\"summary\"][\"passed\"]}/{results[\"summary\"][\"total\"]}')
-"
+# Deploy to Cloudflare Workers (edge locations worldwide)
+wrangler deploy
+
+# Each edge location runs:
+# - Reactive slots (stateless)
+# - Durable Objects (stateful coordination)
+# - KV (global state)
+# - D1 (structured data)
+# - R2 (blob storage)
 ```
 
-## 📝 Documentation
+## 🔄 The Living AGI Cycle
 
-- [PROJECT_LOG.md](PROJECT_LOG.md) - Complete action log and decisions
-- [docs/FRONTEND_PROMPTS.md](docs/FRONTEND_PROMPTS.md) - UI generation prompts
+```
+DISCOVER → ABSTRACT → STORE → REASON → ACT → LEARN → ADAPT
+    ↑                                            |
+    └────────────────────────────────────────────┘
+```
 
-## 🔧 Configuration
-
-### Environment Variables
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `JWT_SECRET` | Secret for JWT signing | Yes |
-| `MASTER_KEY_HASH` | SHA-256 hash of master key | Yes |
-| `ENVIRONMENT` | `development` or `production` | No |
-
-### Cloudflare Bindings
-| Binding | Type | Purpose |
-|---------|------|---------|
-| `KV_SESSIONS` | KV | Session storage |
-| `KV_KEYS` | KV | Key cache |
-| `D1_DATABASE` | D1 | Persistent storage |
-| `R2_BUCKET` | R2 | File storage |
+1. **Discover**: Find new APIs and capabilities
+2. **Abstract**: Convert to logical operators
+3. **Store**: Distribute across reactive storage
+4. **Reason**: Brain coordinates thoughts
+5. **Act**: Execute operator chains
+6. **Learn**: Pattern recognition on outcomes
+7. **Adapt**: Modify behavior based on learning
 
 ## License
 
