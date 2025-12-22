@@ -95,10 +95,16 @@ export async function callLLM(
   const configEntity = new SystemConfigEntity(env, 'sys-config');
   let config = await configEntity.getState().catch(() => null);
   
+  // Resolve Provider
+  let provider = config?.llm?.providers?.find(p => p.id === config.llm.defaultProviderId);
+  if (!provider && config?.llm?.providers && config.llm.providers.length > 0) {
+      provider = config.llm.providers[0];
+  }
+
   // Fallback defaults if config fails or doesn't exist
-  let apiKey = config?.llm?.apiKey || "";
-  let baseURL = config?.llm?.baseUrl || "https://apis.iflow.cn/v1";
-  let model = config?.llm?.defaultModelId || agent.model;
+  let apiKey = provider?.apiKey || "";
+  let baseURL = provider?.baseUrl || "https://apis.iflow.cn/v1";
+  let model = provider?.defaultModelId || agent.model;
 
   // Check for agent overrides
   const override = config?.agentOverrides?.[agent.id];

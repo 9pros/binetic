@@ -9,7 +9,9 @@ import type { Context } from "hono";
 
 export interface Env {
   GlobalDurableObject: DurableObjectNamespace<GlobalDurableObject>;
-  SECURITY_WORKER_URL: string;
+  SECURITY_WORKER: Fetcher;
+  SECURITY_WORKER_URL: string; // Keep for backward compat if needed, or remove
+  SERVICE_KEY: string;
 }
 
 type Doc<T> = { v: number; data: T };

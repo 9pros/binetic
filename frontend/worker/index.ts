@@ -4,6 +4,7 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
 import { Env } from './core-utils';
+import * as staticUserRoutes from './user-routes';
 export * from './core-utils';
 
 type UserRoutesModule = { userRoutes: (app: Hono<{ Bindings: Env }>) => void };
@@ -22,11 +23,19 @@ const safeLoadUserRoutes = async (app: Hono<{ Bindings: Env }>) => {
   if (shouldRetry && now < nextRetryAt) return;
   nextRetryAt = now + RETRY_MS;
 
-  const bust = shouldRetry && import.meta.env?.DEV ? `?t=${now}` : '';
-  const spec = `${USER_ROUTES_MODULE}${bust}`;
-
   try {
-    const mod = (await import(/* @vite-ignore */ spec)) as UserRoutesModule;
+    let mod: UserRoutesModule;
+    
+    // In production, use the statically imported module to ensure bundling.
+    // In dev, try dynamic import for HMR if supported, otherwise fallback.
+    if (import.meta.env?.DEV) {
+       const bust = shouldRetry ? `?t=${now}` : '';
+       const spec = `${USER_ROUTES_MODULE}${bust}`;
+       mod = (await import(/* @vite-ignore */ spec)) as UserRoutesModule;
+    } else {
+       mod = staticUserRoutes;
+    }
+
     mod.userRoutes(app);
     userRoutesLoaded = true;
     userRoutesLoadError = null;

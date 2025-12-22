@@ -239,12 +239,20 @@ export interface AgentOverride {
   systemPrompt?: string;
 }
 
+export interface LLMProvider {
+  id: string;
+  name: string;
+  baseUrl: string;
+  apiKey: string;
+  defaultModelId: string;
+  type: 'openai' | 'anthropic' | 'custom';
+}
+
 export interface SystemConfig {
   id: string;
   llm: {
-    baseUrl: string;
-    apiKey: string;
-    defaultModelId: string;
+    providers: LLMProvider[];
+    defaultProviderId: string;
   };
   agentOverrides: Record<string, AgentOverride>;
 }

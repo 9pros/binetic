@@ -45,6 +45,20 @@ const SEED_KEYS: ApiKey[] = [
     rateLimit: { rpm: 100, rph: 2000 },
     stats: { totalRequests: 4500, errorRate: 0.15, activeSessions: 2 }
   },
+  {
+    id: 'k_svc_frontend',
+    name: 'Frontend Worker Service',
+    key: 'bnk_svc_frontend_worker',
+    scope: 'Service',
+    owner: 'Frontend Worker',
+    status: 'active',
+    createdAt: '2024-01-01',
+    expiresAt: null,
+    lastUsed: 'now',
+    metadata: { description: 'Internal service communication', tags: ['system', 'internal'] },
+    rateLimit: { rpm: 10000, rph: 100000 },
+    stats: { totalRequests: 0, errorRate: 0, activeSessions: 0 }
+  }
 ];
 
 const SEED_POLICIES: SafetyPolicy[] = [

@@ -66,39 +66,25 @@ export async function authMiddleware(c: Context<{ Bindings: Env }>, next: Next) 
   // Verify with Security Worker
   let keyConfig: KeyConfig | null = null;
 
-  if (c.env.SECURITY_WORKER_URL) {
-    try {
-      const res = await fetch(`${c.env.SECURITY_WORKER_URL}/verify`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: token })
-      });
-      
-      if (res.ok) {
-        const json = await res.json() as any;
-        if (json.success && json.data) {
-          const k = json.data;
-          keyConfig = {
-            id: k.id,
-            scope: k.scope,
-            owner: k.owner,
-            role: k.role || 'User',
-            clearance: k.clearance || 1,
-            permissions: k.permissions || []
-          };
-        } else {
-            console.warn(`[AUTH] Security Worker rejected key: ${json.error}`);
-        }
-      } else {
-        console.error(`[AUTH] Security Worker returned ${res.status}`);
-      }
-    } catch (e) {
-      console.error('[AUTH] Security Worker connection failed:', e);
-      return c.json({ success: false, error: 'Security service unavailable' }, 503);
+  try {
+    const json = await callSecurityWorker(c.env, '/verify', 'POST', { key: token });
+    
+    if (json.success && json.data) {
+      const k = json.data;
+      keyConfig = {
+        id: k.id,
+        scope: k.scope,
+        owner: k.owner,
+        role: k.role || 'User',
+        clearance: k.clearance || 1,
+        permissions: k.permissions || []
+      };
+    } else {
+        console.warn(`[AUTH] Security Worker rejected key: ${json.error}`);
     }
-  } else {
-    console.error('[AUTH] SECURITY_WORKER_URL not configured');
-    return c.json({ success: false, error: 'Security configuration missing' }, 500);
+  } catch (e) {
+    console.error('[AUTH] Security Worker connection failed:', e);
+    return c.json({ success: false, error: 'Security service unavailable' }, 503);
   }
 
   if (!keyConfig) {
@@ -151,22 +137,13 @@ export async function handleLogin(c: Context<{ Bindings: Env }>) {
     return c.json({ success: false, error: 'API key required' }, 400);
   }
 
-  if (!c.env.SECURITY_WORKER_URL) {
+  if (!c.env.SECURITY_WORKER && !c.env.SECURITY_WORKER_URL) {
       return c.json({ success: false, error: 'Security configuration missing' }, 500);
   }
 
   try {
-    const res = await fetch(`${c.env.SECURITY_WORKER_URL}/verify`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: apiKey })
-    });
+    const json = await callSecurityWorker(c.env, '/verify', 'POST', { key: apiKey });
 
-    if (!res.ok) {
-        return c.json({ success: false, error: 'Invalid credentials' }, 401);
-    }
-
-    const json = await res.json() as any;
     if (!json.success || !json.data) {
         return c.json({ success: false, error: json.error || 'Invalid credentials' }, 401);
     }
@@ -197,9 +174,9 @@ export async function handleLogin(c: Context<{ Bindings: Env }>) {
         }
     });
 
-  } catch (e) {
+  } catch (e: any) {
       console.error('[AUTH] Login failed:', e);
-      return c.json({ success: false, error: 'Login service unavailable' }, 503);
+      return c.json({ success: false, error: e.message || 'Login service unavailable' }, 503);
   }
 }
 
@@ -247,18 +224,30 @@ export async function callSecurityWorker(env: Env, path: string, method: string 
   // Ensure path starts with /
   const normalizedPath = path.startsWith('/') ? path : '/' + path;
   
-  const res = await fetch(`${env.SECURITY_WORKER_URL}${normalizedPath}`, {
-    method,
-    headers: { 
-      'Content-Type': 'application/json',
-      // Forward the auth token if we had one? 
-      // For now, we assume the frontend worker has a "service key" or similar to talk to security worker.
-      // But wait, security worker protects its API with the same auth middleware.
-      // So we need to pass a valid key.
-      // The frontend worker should probably have a ROOT_KEY or a Service Key configured.
-    },
-    body: body ? JSON.stringify(body) : undefined
-  });
+  // Use Service Binding if available, otherwise fallback to URL (for local dev if not using bindings)
+  let res: Response;
+  
+  if (env.SECURITY_WORKER) {
+      res = await env.SECURITY_WORKER.fetch(`http://internal${normalizedPath}`, {
+        method,
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${env.SERVICE_KEY}`
+        },
+        body: body ? JSON.stringify(body) : undefined
+      });
+  } else if (env.SECURITY_WORKER_URL) {
+      res = await fetch(`${env.SECURITY_WORKER_URL}${normalizedPath}`, {
+        method,
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${env.SERVICE_KEY}`
+        },
+        body: body ? JSON.stringify(body) : undefined
+      });
+  } else {
+      throw new Error('Security Worker not configured (missing binding or URL)');
+  }
   
   if (!res.ok) {
     const text = await res.text();

@@ -383,9 +383,17 @@ export class SystemConfigEntity extends IndexedEntity<SystemConfig> {
   static readonly initialState: SystemConfig = {
     id: "sys-config",
     llm: {
-      baseUrl: "https://apis.iflow.cn/v1",
-      apiKey: "",
-      defaultModelId: "glm-4.6"
+      providers: [
+        {
+          id: "default-provider",
+          name: "Default Provider",
+          baseUrl: "https://apis.iflow.cn/v1",
+          apiKey: "",
+          defaultModelId: "glm-4.6",
+          type: "custom"
+        }
+      ],
+      defaultProviderId: "default-provider"
     },
     agentOverrides: {}
   };
