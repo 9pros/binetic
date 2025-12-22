@@ -178,6 +178,25 @@ class DiscoveryEngine:
         
         # Register discovered capabilities
         for cap in capabilities:
+            # Kernel-level enforcement (global guardrails)
+            try:
+                from security.kernel import get_kernel_enforcer
+
+                enforcer = get_kernel_enforcer()
+                decision = await enforcer.enforce_discovery_register(
+                    capability_type=cap.capability_type.value,
+                    endpoint=cap.endpoint,
+                    method=cap.method,
+                    actor_context={"source_id": source.source_id},
+                )
+                if not decision.allowed:
+                    logger.warning(f"Discovery rejected capability {cap.capability_id}: {decision.reason}")
+                    continue
+            except Exception as e:
+                # Fail-safe: if enforcement crashes, do not register new capabilities.
+                logger.error(f"Kernel enforcement error during discovery: {e}")
+                continue
+
             self._capabilities[cap.capability_id] = cap
             
             # Notify hooks

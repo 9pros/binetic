@@ -1,0 +1,8 @@
+{
+    "github.copilot.chat.mcpServers": {
+        "binetic": {
+            "command": "/opt/homebrew/opt/python@3.11/libexec/bin/python",
+            "args": ["/Users/b0s5i/binetic/mcp_server.py"]
+        }
+    }
+}

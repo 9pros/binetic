@@ -435,3 +435,8 @@ def get_emergent_network() -> EmergentNetwork:
     if _network is None:
         _network = EmergentNetwork()
     return _network
+
+
+def get_network() -> EmergentNetwork:
+    """Backward-compatible alias for the global network singleton."""
+    return get_emergent_network()

@@ -411,6 +411,223 @@ async def create_policy(request: Request) -> Response:
 
 
 # ============================================================================
+# Kernel Policy Routes (Global Guardrails)
+# ============================================================================
+
+@router.route("/api/kernel/policies", HttpMethod.GET)
+async def list_kernel_policies(request: Request) -> Response:
+    """List kernel policies (master only)"""
+    if not request.auth_context:
+        return Response(status=401, body={"error": "Not authenticated"})
+
+    from ..security.auth import get_auth_gateway
+    gateway = get_auth_gateway()
+
+    allowed, _ = await gateway.check_access(
+        request.auth_context,
+        ResourceType.SYSTEM,
+        resource_id="kernel",
+        required_level=PermissionLevel.MASTER,
+    )
+    if not allowed:
+        return Response(status=403, body={"error": "Insufficient permissions"})
+
+    from ..security.kernel import get_kernel_enforcer
+    enforcer = get_kernel_enforcer()
+
+    return Response(
+        body={
+            "policies": [p.to_dict() for p in enforcer.list_kernel_policies(active_only=False)],
+        }
+    )
+
+
+@router.route("/api/kernel/policies/:policy_id", HttpMethod.GET)
+async def get_kernel_policy(request: Request) -> Response:
+    """Get a kernel policy by id (master only)"""
+    if not request.auth_context:
+        return Response(status=401, body={"error": "Not authenticated"})
+
+    from ..security.auth import get_auth_gateway
+    gateway = get_auth_gateway()
+
+    allowed, _ = await gateway.check_access(
+        request.auth_context,
+        ResourceType.SYSTEM,
+        resource_id="kernel",
+        required_level=PermissionLevel.MASTER,
+    )
+    if not allowed:
+        return Response(status=403, body={"error": "Insufficient permissions"})
+
+    policy_id = request.path.split("/")[-1]
+    from ..security.policies import get_policy_engine
+    pe = get_policy_engine()
+    policy = await pe.get_policy(policy_id)
+    if not policy or not policy.policy_id.startswith("kpol_"):
+        return Response(status=404, body={"error": "Kernel policy not found"})
+
+    return Response(body=policy.to_dict())
+
+
+@router.route("/api/kernel/policies", HttpMethod.POST)
+async def create_kernel_policy(request: Request) -> Response:
+    """Create a kernel policy (master only)"""
+    if not request.auth_context:
+        return Response(status=401, body={"error": "Not authenticated"})
+
+    from ..security.auth import get_auth_gateway
+    gateway = get_auth_gateway()
+
+    allowed, _ = await gateway.check_access(
+        request.auth_context,
+        ResourceType.SYSTEM,
+        resource_id="kernel",
+        required_level=PermissionLevel.MASTER,
+    )
+    if not allowed:
+        return Response(status=403, body={"error": "Insufficient permissions"})
+
+    body = request.body or {}
+
+    # Create a kernel policy with explicit ID prefix
+    policy_id = body.get("policy_id") or f"kpol_{int(time.time())}"
+    if not str(policy_id).startswith("kpol_"):
+        return Response(status=400, body={"error": "policy_id must start with 'kpol_'"})
+
+    policy = Policy(
+        policy_id=policy_id,
+        name=body.get("name", "Kernel Policy"),
+        description=body.get("description", ""),
+        created_by=request.auth_context.key_id if request.auth_context else "unknown",
+    )
+
+    # Parse permissions
+    perms = []
+    for perm_data in body.get("permissions", []):
+        try:
+            perms.append(
+                Permission(
+                    resource_type=ResourceType(perm_data["resource_type"]),
+                    resource_id=perm_data.get("resource_id"),
+                    level=PermissionLevel(int(perm_data["level"])),
+                )
+            )
+        except Exception as e:
+            return Response(status=400, body={"error": f"Invalid permission: {e}"})
+    policy.permissions = perms
+
+    # Allow/deny lists
+    policy.allowed_operators = body.get("allowed_operators", [])
+    policy.denied_operators = body.get("denied_operators", [])
+    policy.allowed_endpoints = body.get("allowed_endpoints", [])
+    policy.denied_endpoints = body.get("denied_endpoints", [])
+
+    # Activation
+    if "is_active" in body:
+        policy.is_active = bool(body.get("is_active"))
+
+    from ..security.policies import get_policy_engine
+    pe = get_policy_engine()
+    pe._policies[policy.policy_id] = policy
+
+    return Response(status=201, body=policy.to_dict())
+
+
+@router.route("/api/kernel/policies/:policy_id", HttpMethod.PATCH)
+async def update_kernel_policy(request: Request) -> Response:
+    """Update a kernel policy (master only)."""
+    if not request.auth_context:
+        return Response(status=401, body={"error": "Not authenticated"})
+
+    from ..security.auth import get_auth_gateway
+    gateway = get_auth_gateway()
+
+    allowed, _ = await gateway.check_access(
+        request.auth_context,
+        ResourceType.SYSTEM,
+        resource_id="kernel",
+        required_level=PermissionLevel.MASTER,
+    )
+    if not allowed:
+        return Response(status=403, body={"error": "Insufficient permissions"})
+
+    policy_id = request.path.split("/")[-1]
+    if not policy_id.startswith("kpol_"):
+        return Response(status=404, body={"error": "Kernel policy not found"})
+
+    from ..security.policies import get_policy_engine
+    pe = get_policy_engine()
+    policy = await pe.get_policy(policy_id)
+    if not policy:
+        return Response(status=404, body={"error": "Kernel policy not found"})
+
+    body = request.body or {}
+    for key in [
+        "name",
+        "description",
+        "allowed_operators",
+        "denied_operators",
+        "allowed_endpoints",
+        "denied_endpoints",
+        "is_active",
+    ]:
+        if key in body:
+            setattr(policy, key, body[key])
+
+    if "permissions" in body:
+        perms = []
+        for perm_data in body.get("permissions", []):
+            try:
+                perms.append(
+                    Permission(
+                        resource_type=ResourceType(perm_data["resource_type"]),
+                        resource_id=perm_data.get("resource_id"),
+                        level=PermissionLevel(int(perm_data["level"])),
+                    )
+                )
+            except Exception as e:
+                return Response(status=400, body={"error": f"Invalid permission: {e}"})
+        policy.permissions = perms
+
+    policy.updated_at = time.time()
+    pe._policies[policy.policy_id] = policy
+
+    return Response(body=policy.to_dict())
+
+
+@router.route("/api/kernel/policies/:policy_id", HttpMethod.DELETE)
+async def delete_kernel_policy(request: Request) -> Response:
+    """Delete a kernel policy (master only)."""
+    if not request.auth_context:
+        return Response(status=401, body={"error": "Not authenticated"})
+
+    from ..security.auth import get_auth_gateway
+    gateway = get_auth_gateway()
+
+    allowed, _ = await gateway.check_access(
+        request.auth_context,
+        ResourceType.SYSTEM,
+        resource_id="kernel",
+        required_level=PermissionLevel.MASTER,
+    )
+    if not allowed:
+        return Response(status=403, body={"error": "Insufficient permissions"})
+
+    policy_id = request.path.split("/")[-1]
+    if not policy_id.startswith("kpol_"):
+        return Response(status=404, body={"error": "Kernel policy not found"})
+
+    from ..security.policies import get_policy_engine
+    pe = get_policy_engine()
+    ok = await pe.delete_policy(policy_id)
+    if not ok:
+        return Response(status=404, body={"error": "Kernel policy not found"})
+
+    return Response(body={"deleted": True, "policy_id": policy_id})
+
+
+# ============================================================================
 # Brain/Intelligence Routes
 # ============================================================================
 

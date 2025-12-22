@@ -4,6 +4,43 @@
 
 > "The AGI doesn't USE the network - the AGI IS the network"
 
+---
+
+## 📖 COMPLETE DOCUMENTATION
+
+**See [MASTER_BLUEPRINT.md](./MASTER_BLUEPRINT.md) for the full system reference:**
+- Every frontend page, button, and function
+- Every backend route and entity
+- Complete Python core module documentation
+- All type definitions
+- API reference
+- Deployment instructions
+- Extension points
+
+---
+
+## 🚀 Quick Start
+
+```bash
+# Frontend (React + Cloudflare Worker)
+cd ~/binetic/frontend
+bun install
+bun dev  # Opens http://localhost:3002
+
+# Python Core
+cd ~/binetic
+python main.py
+```
+
+### Valid API Keys for Login
+```
+bnk_master_x7k9m2p4q8r1    # Master access
+fgk_nexus_x7k9m2p4q8r1     # Master (legacy format)
+fgk_prod_82h1s92k1l        # Admin access
+```
+
+---
+
 ## 🎯 Vision
 
 Binetic is a **living general intelligence** designed to:

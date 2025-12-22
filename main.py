@@ -113,6 +113,10 @@ async def handle_request(request, env=None):
             "Access-Control-Allow-Origin": "*",
             "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
             "Access-Control-Allow-Headers": "Authorization, Content-Type, X-API-Key",
+            # Transport/security headers (effective only over HTTPS)
+            "Strict-Transport-Security": "max-age=15552000; includeSubDomains; preload",
+            "X-Content-Type-Options": "nosniff",
+            "Referrer-Policy": "no-referrer",
         },
         "body": json.dumps(response.body) if response.body else "",
     }

@@ -434,3 +434,14 @@ def test(suite_name: str, test_name: Optional[str] = None):
 def suite(name: str, category: TestCategory = TestCategory.UNIT) -> TestSuite:
     """Get or create a test suite"""
     return get_test_runner().suite(name, category)
+
+
+# Prevent pytest from collecting these as tests
+test.__test__ = False  # type: ignore[attr-defined]
+suite.__test__ = False  # type: ignore[attr-defined]
+
+# Also prevent pytest from trying to treat framework types as tests
+TestStatus.__test__ = False  # type: ignore[attr-defined]
+TestCategory.__test__ = False  # type: ignore[attr-defined]
+TestResult.__test__ = False  # type: ignore[attr-defined]
+TestSuite.__test__ = False  # type: ignore[attr-defined]

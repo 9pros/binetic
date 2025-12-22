@@ -1,0 +1,2 @@
+[console_scripts]
+binetic = binetic.main:main

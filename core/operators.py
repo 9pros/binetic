@@ -165,6 +165,7 @@ class OperatorRegistry:
         operator_id: str,
         inputs: Dict[str, Any],
         timeout: float = 30.0,
+        enforcement: Optional[Dict[str, Any]] = None,
     ) -> OperatorInvocation:
         """Invoke an operator with given inputs"""
         operator = await self.get(operator_id)
@@ -186,6 +187,32 @@ class OperatorRegistry:
         start_time = time.time()
         
         try:
+            # Kernel-level enforcement (global guardrails)
+            try:
+                from security.kernel import get_kernel_enforcer
+
+                enforcer = get_kernel_enforcer()
+                decision = await enforcer.enforce_operator_invoke(
+                    operator_id=operator.operator_id,
+                    endpoint=operator.endpoint_url,
+                    method=operator.method,
+                    actor_policy_id=(enforcement or {}).get("actor_policy_id"),
+                    actor_context=enforcement or {},
+                )
+                if not decision.allowed:
+                    invocation.latency_ms = (time.time() - start_time) * 1000
+                    invocation.success = False
+                    invocation.error = decision.reason
+                    self._invocation_history.append(invocation)
+                    return invocation
+            except Exception as e:
+                # Fail-safe: if enforcement crashes, do not execute side-effects.
+                invocation.latency_ms = (time.time() - start_time) * 1000
+                invocation.success = False
+                invocation.error = f"Kernel enforcement error: {e}"
+                self._invocation_history.append(invocation)
+                return invocation
+
             # Build request from template
             request_body = self._build_request(operator, inputs)
             

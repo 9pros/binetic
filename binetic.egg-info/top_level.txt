@@ -1,0 +1,7 @@
+api
+core
+docs
+frontend
+infra
+security
+tests

@@ -458,6 +458,14 @@ class Brain:
         logger.info("Brain resumed")
     
     @property
+    def thoughts(self) -> List[Thought]:
+        return list(self._thoughts.values())
+
+    @property
+    def goals(self) -> List[Goal]:
+        return list(self._goals.values())
+
+    @property
     def state(self) -> BrainState:
         return self._state
     

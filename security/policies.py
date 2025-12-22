@@ -502,6 +502,10 @@ def create_default_policies() -> Dict[str, Policy]:
     }
 
 
+# Backward-compatible constant export
+DEFAULT_POLICIES: Dict[str, Policy] = create_default_policies()
+
+
 # Global policy engine
 _engine: Optional[PolicyEngine] = None
 
@@ -512,6 +516,6 @@ def get_policy_engine() -> PolicyEngine:
     if _engine is None:
         _engine = PolicyEngine()
         # Load default policies
-        for policy in create_default_policies().values():
+        for policy in DEFAULT_POLICIES.values():
             _engine._policies[policy.policy_id] = policy
     return _engine

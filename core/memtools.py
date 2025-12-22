@@ -140,8 +140,26 @@ class MemtoolRegistry:
         importance: float = 0.5,
         tags: Optional[Set[str]] = None,
         links: Optional[Set[str]] = None,
+        enforcement: Optional[Dict[str, Any]] = None,
     ) -> Memory:
         """Store a new memory"""
+        # Kernel-level enforcement (global guardrails)
+        try:
+            from security.kernel import get_kernel_enforcer
+
+            enforcer = get_kernel_enforcer()
+            decision = await enforcer.enforce_memory_store(
+                memory_type=memory_type,
+                actor_policy_id=(enforcement or {}).get("actor_policy_id"),
+                actor_context=enforcement or {},
+            )
+            if not decision.allowed:
+                raise PermissionError(decision.reason)
+        except PermissionError:
+            raise
+        except Exception as e:
+            raise PermissionError(f"Kernel enforcement error: {e}")
+
         memory_id = self._generate_id(content)
         
         # Check if exists
