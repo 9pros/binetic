@@ -10,7 +10,7 @@ import {
   DiscoverySourceEntity, DiscoveryCapabilityEntity, BrainEntity, ApprovalEntity, SystemConfigEntity
 } from "./entities";
 import { ok, bad, notFound, isStr } from './core-utils';
-import { authMiddleware, handleLogin, handleVerify, handleLogout, getAuth } from './auth';
+import { authMiddleware, handleLogin, handleVerify, handleLogout, getAuth, callSecurityWorker } from './auth';
 import { AGENTS, callLLM } from './llm-utils';
 
 export function userRoutes(app: Hono<{ Bindings: Env }>) {
@@ -207,9 +207,12 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
   // API KEYS
   // =========================================================================
   app.get('/api/keys', async (c) => {
-    await ApiKeyEntity.ensureSeed(c.env);
-    const { items } = await ApiKeyEntity.list(c.env, null, 100);
-    return ok(c, items);
+    try {
+      const res = await callSecurityWorker(c.env, '/api/keys');
+      return c.json(res);
+    } catch (e: any) {
+      return bad(c, e.message);
+    }
   });
 
   app.get('/api/keys/:id', async (c) => {

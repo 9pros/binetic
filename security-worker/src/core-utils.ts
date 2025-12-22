@@ -1,35 +1,24 @@
-/**
- * Core utilities for Multiple Entities sharing a single Durable Object class
- * DO NOT MODIFY THIS FILE - You may break the project functionality. STRICTLY DO NOT TOUCH
- * Look at the \`worker/entities.ts\` file for examples on how to use this library
- */
-import type { ApiResponse } from "@shared/types";
-import { DurableObject } from "cloudflare:workers"; // DO NOT MODIFY THIS LINE. This is always already installed and available
+import { DurableObject } from "cloudflare:workers";
 import type { Context } from "hono";
 
 export interface Env {
-  GlobalDurableObject: DurableObjectNamespace<GlobalDurableObject>;
-  SECURITY_WORKER_URL: string;
+  SecurityDurableObject: DurableObjectNamespace<SecurityDurableObject>;
+  ROOT_KEY?: string;
 }
 
 type Doc<T> = { v: number; data: T };
 
-/**
- * Global Durable object for storage-purpose ONLY, to be used as a KV-like storage by multiple entities
- */
-export class GlobalDurableObject extends DurableObject<Env, unknown> {
+export class SecurityDurableObject extends DurableObject<Env, unknown> {
   constructor(public ctx: DurableObjectState, public env: Env) {
     super(ctx, env);
   }
 
-  /** Delete a key; returns true if it existed. */
   async del(key: string): Promise<boolean> {
     const existed = (await this.ctx.storage.get(key)) !== undefined;
     await this.ctx.storage.delete(key);
     return existed;
   }
 
-  /** Fast existence check. */
   async has(key: string): Promise<boolean> {
     return (await this.ctx.storage.get(key)) !== undefined;
   }
@@ -55,9 +44,8 @@ export class GlobalDurableObject extends DurableObject<Env, unknown> {
     if (limit != null) opts.limit = limit;
     if (startAfter)   opts.startAfter = startAfter;
   
-    const m = await this.ctx.storage.list(opts);            // Map<string, unknown>
+    const m = await this.ctx.storage.list(opts);
     const names = Array.from((m as Map<string, unknown>).keys());
-    // Heuristic: if we got "limit" items, assume there might be more; use the last key as the cursor.
     const next = limit != null && names.length === limit ? names[names.length - 1] : null;
     return { keys: names, next };
   }
@@ -87,18 +75,15 @@ export class GlobalDurableObject extends DurableObject<Env, unknown> {
 }
 
 export interface EntityStatics<S, T extends Entity<S>> {
-  new (env: Env, id: string): T; // inherited default ctor
+  new (env: Env, id: string): T;
   readonly entityName: string;
   readonly initialState: S;
 }
 
-/**
- * Base class for entities - extend this class to create new entities
- */
 export abstract class Entity<State> {
   protected _state!: State;
   protected _version: number = 0;
-  protected readonly stub: DurableObjectStub<GlobalDurableObject>;
+  protected readonly stub: DurableObjectStub<SecurityDurableObject>;
   protected readonly _id: string;
   protected readonly entityName: string;
   protected readonly env: Env;
@@ -107,16 +92,14 @@ export abstract class Entity<State> {
     this.env = env;
     this._id = id;
 
-    // Read subclass statics via new.target / constructor
     const Ctor = this.constructor as EntityStatics<State, this>;
     this.entityName = Ctor.entityName;
 
     const instanceName = `${this.entityName}:${this._id}`;
-    const doId = env.GlobalDurableObject.idFromName(instanceName);
-    this.stub = env.GlobalDurableObject.get(doId);
+    const doId = env.SecurityDurableObject.idFromName(instanceName);
+    this.stub = env.SecurityDurableObject.get(doId);
   }
 
-  /** Synchronous accessors */
   get id(): string {
     return this._id;
   }
@@ -124,12 +107,10 @@ export abstract class Entity<State> {
     return this._state;
   }
 
-  /** Storage key for this entity document. */
   protected key(): string {
     return `${this.entityName}:${this._id}`;
   }
 
-  /** Save and refresh cache. */
   async save(next: State): Promise<void> {
     for (let i = 0; i < 4; i++) {
       await this.ensureState();
@@ -139,7 +120,6 @@ export abstract class Entity<State> {
         this._state = next;
         return;
       }
-      // retry on contention
     }
     throw new Error("Concurrent modification detected");
   }
@@ -158,7 +138,6 @@ export abstract class Entity<State> {
   }
 
   async mutate(updater: (current: State) => State): Promise<State> {
-    // Small bounded retry loop for CAS contention
     for (let i = 0; i < 4; i++) {
       const current = await this.ensureState();
       const startV = this._version;
@@ -169,7 +148,6 @@ export abstract class Entity<State> {
         this._state = next;
         return next;
       }
-      // someone else updated; retry
     }
     throw new Error("Concurrent modification detected");
   }
@@ -186,7 +164,6 @@ export abstract class Entity<State> {
     return this.stub.has(this.key());
   }
 
-  /** Delete the entity. */
   async delete(): Promise<boolean> {
     const ok = await this.stub.del(this.key());
     if (ok) {
@@ -198,15 +175,11 @@ export abstract class Entity<State> {
   }
 }
 
-// Minimal prefix-based index held in its own DO instance.
 export class Index<T extends string> extends Entity<unknown> {
   static readonly entityName = "sys-index-root";
 
   constructor(env: Env, name: string) { super(env, `index:${name}`); }
 
-  /**
-   * Adds a batch of items to the index transactionally.
-   */
   async addBatch(itemsToAdd: T[]): Promise<void> {
     if (itemsToAdd.length === 0) return;
     await this.stub.indexAddBatch(itemsToAdd);
@@ -247,7 +220,6 @@ export abstract class IndexedEntity<S extends { id: string }> extends Entity<S> 
   static readonly indexName: string;
   static keyOf<U extends { id: string }>(state: U): string { return state.id; }
 
-  // Static helpers infer S from `this` and the arguments
   static async create<TCtor extends CtorAny>(this: HS<TCtor>, env: Env, state: IS<TCtor>): Promise<IS<TCtor>> {
     const id = this.keyOf(state);
     const inst = new this(env, id);
@@ -279,7 +251,6 @@ export abstract class IndexedEntity<S extends { id: string }> extends Entity<S> 
     }
   }
 
-  /** Delete an entity document and remove its id from the index. */
   static async delete<TCtor extends CtorAny>(this: HS<TCtor>, env: Env, id: string): Promise<boolean> {
     const inst = new this(env, id);
     const existed = await inst.delete();
@@ -288,7 +259,6 @@ export abstract class IndexedEntity<S extends { id: string }> extends Entity<S> 
     return existed;
   }
 
-  /** Delete many entities and prune their ids from the index. Returns number of docs removed. */
   static async deleteMany<TCtor extends CtorAny>(this: HS<TCtor>, env: Env, ids: string[]): Promise<number> {
     if (ids.length === 0) return 0;
     const results = await Promise.all(ids.map(async (id) => new this(env, id).delete()));
@@ -297,7 +267,6 @@ export abstract class IndexedEntity<S extends { id: string }> extends Entity<S> 
     return results.filter(Boolean).length;
   }
 
-  /** Remove only the id from the index; does not delete the entity document. */
   static async removeFromIndex<TCtor extends CtorAny>(this: HS<TCtor>, env: Env, id: string): Promise<void> {
     const idx = new Index<string>(env, this.indexName);
     await idx.remove(id);
@@ -306,7 +275,6 @@ export abstract class IndexedEntity<S extends { id: string }> extends Entity<S> 
   protected override async ensureState(): Promise<S> {
     const s = (await super.ensureState()) as S;
     if (!s.id) {
-      // Ensure the entity state id matches the instance id for consistency
       const withId = { ...s, id: this.id } as S;
       this._state = withId;
       return withId;
@@ -315,7 +283,11 @@ export abstract class IndexedEntity<S extends { id: string }> extends Entity<S> 
   }
 }
 
-// API HELPERS
+export interface ApiResponse<T = unknown> {
+    success: boolean;
+    data?: T;
+    error?: string;
+}
 
 export const ok = <T>(c: Context, data: T) => c.json({ success: true, data } as ApiResponse<T>);
 export const bad = (c: Context, error: string) => c.json({ success: false, error } as ApiResponse, 400);

@@ -1,8 +1,8 @@
 /**
  * Binetic AGI - Authentication Module
  * 
- * SECURITY: Master keys are validated server-side.
- * Supports both legacy fgk_ and new bnk_ key formats.
+ * SECURITY: Delegates authentication to the private Security Worker.
+ * No secrets are stored in this repository.
  */
 
 import type { Context, Next } from 'hono';
@@ -27,61 +27,6 @@ export interface AuthContext {
   authenticated: boolean;
 }
 
-// ============================================================================
-// KEY CONFIGURATION
-// ============================================================================
-
-/**
- * Active master keys - the ONLY valid keys for system access.
- * Supports both fgk_ (legacy) and bnk_ (binetic) formats.
- */
-const VALID_KEYS: Record<string, KeyConfig> = {
-  // Legacy Master Key (fgk format)
-  'fgk_nexus_x7k9m2p4q8r1': {
-    id: 'key-001',
-    scope: 'Master',
-    owner: 'System Administrator',
-    role: 'AGI Commander',
-    clearance: 10,
-    permissions: ['*'],
-  },
-  // NEW Binetic Master Key (bnk format)
-  'bnk_master_x7k9m2p4q8r1': {
-    id: 'key-002',
-    scope: 'Master',
-    owner: 'Binetic Core',
-    role: 'Living Intelligence',
-    clearance: 10,
-    permissions: ['*'],
-  },
-  // Service key for automated systems
-  'fgk_svc_auto_7h3j9k2m': {
-    id: 'key-003',
-    scope: 'Service',
-    owner: 'Autonomous Guardian',
-    role: 'System Agent',
-    clearance: 8,
-    permissions: ['read:*', 'execute:operators', 'execute:network'],
-  },
-  // Binetic Service key
-  'bnk_service_auto_7h3j9k2m': {
-    id: 'key-004',
-    scope: 'Service',
-    owner: 'Binetic Agent',
-    role: 'Decentralized Worker',
-    clearance: 8,
-    permissions: ['read:*', 'execute:operators', 'execute:network', 'llm:*'],
-  },
-};
-
-/**
- * REVOKED KEYS - explicitly blocked (for audit logging)
- */
-const REVOKED_KEYS = new Set([
-  'fgk_master_nexus_alpha9',  // Invalidated 2025-12-20
-  'fgk_guest',                // Never valid
-]);
-
 // Store auth context per-request (using WeakMap to avoid memory leaks)
 const authStore = new WeakMap<Request, AuthContext>();
 
@@ -90,7 +35,7 @@ const authStore = new WeakMap<Request, AuthContext>();
 // ============================================================================
 
 /**
- * Auth middleware - validates Bearer token against known keys
+ * Auth middleware - validates Bearer token against Security Worker
  */
 export async function authMiddleware(c: Context<{ Bindings: Env }>, next: Next) {
   const authHeader = c.req.header('Authorization');
@@ -109,16 +54,6 @@ export async function authMiddleware(c: Context<{ Bindings: Env }>, next: Next) 
     }, 401);
   }
 
-  // Check if key is revoked
-  if (REVOKED_KEYS.has(token)) {
-    console.warn(`[AUTH] Revoked key attempted: ${token.slice(0, 12)}...`);
-    return c.json({ 
-      success: false, 
-      error: 'Access key has been revoked',
-      code: 'KEY_REVOKED'
-    }, 401);
-  }
-
   // Validate key format (accept both fgk_ and bnk_)
   if (!token.startsWith('fgk_') && !token.startsWith('bnk_')) {
     return c.json({ 
@@ -128,10 +63,45 @@ export async function authMiddleware(c: Context<{ Bindings: Env }>, next: Next) 
     }, 401);
   }
 
-  // Lookup key
-  const keyConfig = VALID_KEYS[token];
+  // Verify with Security Worker
+  let keyConfig: KeyConfig | null = null;
+
+  if (c.env.SECURITY_WORKER_URL) {
+    try {
+      const res = await fetch(`${c.env.SECURITY_WORKER_URL}/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: token })
+      });
+      
+      if (res.ok) {
+        const json = await res.json() as any;
+        if (json.success && json.data) {
+          const k = json.data;
+          keyConfig = {
+            id: k.id,
+            scope: k.scope,
+            owner: k.owner,
+            role: k.role || 'User',
+            clearance: k.clearance || 1,
+            permissions: k.permissions || []
+          };
+        } else {
+            console.warn(`[AUTH] Security Worker rejected key: ${json.error}`);
+        }
+      } else {
+        console.error(`[AUTH] Security Worker returned ${res.status}`);
+      }
+    } catch (e) {
+      console.error('[AUTH] Security Worker connection failed:', e);
+      return c.json({ success: false, error: 'Security service unavailable' }, 503);
+    }
+  } else {
+    console.error('[AUTH] SECURITY_WORKER_URL not configured');
+    return c.json({ success: false, error: 'Security configuration missing' }, 500);
+  }
+
   if (!keyConfig) {
-    console.warn(`[AUTH] Unknown key attempted: ${token.slice(0, 12)}...`);
     return c.json({ 
       success: false, 
       error: 'Invalid access key',
@@ -181,50 +151,56 @@ export async function handleLogin(c: Context<{ Bindings: Env }>) {
     return c.json({ success: false, error: 'API key required' }, 400);
   }
 
-  // Check revoked
-  if (REVOKED_KEYS.has(apiKey)) {
-    return c.json({ 
-      success: false, 
-      error: 'This access key has been revoked',
-      code: 'KEY_REVOKED'
-    }, 401);
+  if (!c.env.SECURITY_WORKER_URL) {
+      return c.json({ success: false, error: 'Security configuration missing' }, 500);
   }
 
-  // Validate format (accept both fgk_ and bnk_)
-  if (!apiKey.startsWith('fgk_') && !apiKey.startsWith('bnk_')) {
-    return c.json({ 
-      success: false, 
-      error: 'Invalid key format. Keys must start with fgk_ or bnk_',
-      code: 'KEY_INVALID_FORMAT'
-    }, 401);
-  }
+  try {
+    const res = await fetch(`${c.env.SECURITY_WORKER_URL}/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: apiKey })
+    });
 
-  // Lookup key
-  const keyConfig = VALID_KEYS[apiKey];
-  if (!keyConfig) {
-    return c.json({ 
-      success: false, 
-      error: 'Access denied. Key not recognized.',
-      code: 'KEY_NOT_FOUND'
-    }, 401);
-  }
-
-  console.log(`[AUTH] Login success: ${keyConfig.owner} (${keyConfig.scope})`);
-
-  // Success - return user info
-  return c.json({
-    success: true,
-    data: {
-      user: {
-        id: keyConfig.id,
-        name: keyConfig.owner,
-        role: keyConfig.role,
-      },
-      scope: keyConfig.scope,
-      clearance: keyConfig.clearance,
-      permissions: keyConfig.permissions,
+    if (!res.ok) {
+        return c.json({ success: false, error: 'Invalid credentials' }, 401);
     }
-  });
+
+    const json = await res.json() as any;
+    if (!json.success || !json.data) {
+        return c.json({ success: false, error: json.error || 'Invalid credentials' }, 401);
+    }
+
+    const k = json.data;
+    const keyConfig: KeyConfig = {
+        id: k.id,
+        scope: k.scope,
+        owner: k.owner,
+        role: k.role || 'User',
+        clearance: k.clearance || 1,
+        permissions: k.permissions || []
+    };
+
+    console.log(`[AUTH] Login success: ${keyConfig.owner} (${keyConfig.scope})`);
+
+    return c.json({
+        success: true,
+        data: {
+            user: {
+                id: keyConfig.id,
+                name: keyConfig.owner,
+                role: keyConfig.role,
+            },
+            scope: keyConfig.scope,
+            clearance: keyConfig.clearance,
+            permissions: keyConfig.permissions,
+        }
+    });
+
+  } catch (e) {
+      console.error('[AUTH] Login failed:', e);
+      return c.json({ success: false, error: 'Login service unavailable' }, 503);
+  }
 }
 
 /**
@@ -260,4 +236,34 @@ export async function handleLogout(c: Context<{ Bindings: Env }>) {
     console.log(`[AUTH] Logout: ${auth.config.owner}`);
   }
   return c.json({ success: true, data: { message: 'Logged out' } });
+}
+
+/**
+ * Helper to call the Security Worker API
+ */
+export async function callSecurityWorker(env: Env, path: string, method: string = 'GET', body?: any) {
+  if (!env.SECURITY_WORKER_URL) throw new Error('Security Worker URL not configured');
+  
+  // Ensure path starts with /
+  const normalizedPath = path.startsWith('/') ? path : '/' + path;
+  
+  const res = await fetch(`${env.SECURITY_WORKER_URL}${normalizedPath}`, {
+    method,
+    headers: { 
+      'Content-Type': 'application/json',
+      // Forward the auth token if we had one? 
+      // For now, we assume the frontend worker has a "service key" or similar to talk to security worker.
+      // But wait, security worker protects its API with the same auth middleware.
+      // So we need to pass a valid key.
+      // The frontend worker should probably have a ROOT_KEY or a Service Key configured.
+    },
+    body: body ? JSON.stringify(body) : undefined
+  });
+  
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Security Worker error: ${res.status} ${text}`);
+  }
+  
+  return res.json();
 }

@@ -15,7 +15,7 @@ Create a complete FlowGen AGI Control Center with the following requirements:
 FlowGen is an emergent AGI system that requires a secure control center for:
 - Authentication and session management
 - API key provisioning and management
-- Policy-based access control
+- Policy-based access controli
 - Real-time network monitoring
 - Memory/intelligence visualization
 - Operator management
