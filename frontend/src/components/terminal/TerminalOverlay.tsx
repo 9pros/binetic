@@ -53,7 +53,7 @@ export function TerminalOverlay() {
           try {
             addEntry('output', 'Fetching system status...');
             const stats = await api<any>('/brain/stats', { baseUrl: PYTHON_CORE_URL });
-            addEntry('output', `System: ONLINE\nBrain State: ${stats.state}\nThoughts: ${stats.total_thoughts}\nUptime: ${stats.uptime.toFixed(2)}s`);
+            addEntry('output', `System: ONLINE\nBrain State: ${stats.state}\nThoughts: ${stats.total_thoughts}\nUptime: ${stats.uptime_seconds.toFixed(2)}s`);
           } catch (e: any) {
             addEntry('error', `Status check failed: ${e.message}`);
           }
