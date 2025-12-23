@@ -96,8 +96,28 @@ class OperatorSignature:
     avg_latency_ms: float = 0.0
     success_rate: float = 1.0
     consistency_score: float = 1.0
+    call_count: int = 0
     
     # Composition hints
+    
+    def update_stats(self, success: bool, latency_ms: float):
+        """Update operator statistics based on execution outcome"""
+        self.call_count += 1
+        
+        # Update success rate (moving average)
+        alpha = 0.1  # Learning rate
+        current_success = 1.0 if success else 0.0
+        self.success_rate = (1 - alpha) * self.success_rate + alpha * current_success
+        
+        # Update latency
+        if self.avg_latency_ms == 0:
+            self.avg_latency_ms = latency_ms
+        else:
+            self.avg_latency_ms = (1 - alpha) * self.avg_latency_ms + alpha * latency_ms
+            
+        # Update consistency (simple heuristic: high success + low variance)
+        # For now, just track success consistency
+        self.consistency_score = self.success_rate * (1.0 if self.call_count > 5 else 0.5)
     can_chain: bool = True
     idempotent: bool = False
     side_effects: bool = True
@@ -138,12 +158,68 @@ class OperatorRegistry:
     Thread-safe, supports hot-reloading and persistence.
     """
     
-    def __init__(self):
+    def __init__(self, persist_path: str = "data/operators.json"):
         self._operators: Dict[str, OperatorSignature] = {}
         self._by_type: Dict[OperatorType, List[str]] = {}
         self._invocation_history: List[OperatorInvocation] = []
         self._lock = asyncio.Lock()
+        self._persist_path = persist_path
+        self._load_from_disk()
     
+    def _load_from_disk(self):
+        """Load operators from disk"""
+        import os
+        import json
+        if not os.path.exists(self._persist_path):
+            return
+            
+        try:
+            with open(self._persist_path, "r") as f:
+                data = json.load(f)
+                
+            for op_data in data:
+                # Reconstruct OperatorSignature
+                # We need to handle Enum conversion manually
+                op_type_str = op_data.pop("operator_type", "unknown")
+                try:
+                    op_type = OperatorType(op_type_str)
+                except ValueError:
+                    op_type = OperatorType.COMPUTE
+                
+                op = OperatorSignature(operator_type=op_type, **op_data)
+                self._operators[op.operator_id] = op
+                
+                # Rebuild index
+                if op.operator_type not in self._by_type:
+                    self._by_type[op.operator_type] = []
+                if op.operator_id not in self._by_type[op.operator_type]:
+                    self._by_type[op.operator_type].append(op.operator_id)
+                    
+            logger.info(f"Loaded {len(self._operators)} operators from {self._persist_path}")
+        except Exception as e:
+            logger.error(f"Failed to load operators: {e}")
+
+    def _save_to_disk(self):
+        """Save operators to disk"""
+        import os
+        import json
+        
+        # Ensure directory exists
+        os.makedirs(os.path.dirname(self._persist_path), exist_ok=True)
+        
+        data = []
+        for op in self._operators.values():
+            op_dict = op.__dict__.copy()
+            # Convert Enum to string
+            op_dict["operator_type"] = op.operator_type.value
+            data.append(op_dict)
+            
+        try:
+            with open(self._persist_path, "w") as f:
+                json.dump(data, f, indent=2, default=str)
+        except Exception as e:
+            logger.error(f"Failed to save operators: {e}")
+
     async def register(self, operator: OperatorSignature):
         """Register a new operator"""
         async with self._lock:
@@ -154,6 +230,7 @@ class OperatorRegistry:
             if operator.operator_id not in self._by_type[operator.operator_type]:
                 self._by_type[operator.operator_type].append(operator.operator_id)
             
+            self._save_to_disk()
             logger.info(f"Registered operator: {operator.operator_id} ({operator.operator_type.value})")
     
     async def get(self, operator_id: str) -> Optional[OperatorSignature]:
@@ -368,8 +445,9 @@ class OperatorRegistry:
     async def _update_stats(self, operator: OperatorSignature, invocation: OperatorInvocation):
         """Update operator statistics after invocation"""
         async with self._lock:
-            operator.invocation_count += 1
+            operator.update_stats(invocation.success, invocation.latency_ms)
             operator.last_used = time.time()
+            self._save_to_disk()
             
             # Exponential moving average for latency
             alpha = 0.2

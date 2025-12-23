@@ -60,8 +60,8 @@ DISCOVER → ABSTRACT → STORE → REASON → ACT → LEARN → ADAPT
 | **Store** | Distribute across reactive storage |
 | **Reason** | Brain coordinates thoughts |
 | **Act** | Execute operator chains |
-| **Learn** | Pattern recognition on outcomes |
-| **Adapt** | Modify behavior based on learning |
+| **Learn** | Reinforcement learning from execution outcomes |
+| **Adapt** | Modify operator weights and create correction nodes |
 
 ---
 
@@ -81,7 +81,7 @@ DISCOVER → ABSTRACT → STORE → REASON → ACT → LEARN → ADAPT
 ├─────────────────────────────────────────────────────────────┤
 │                    BINETIC PYTHON CORE                      │
 │        Brain + Network + Operators + Memory + Discovery      │
-│                   (Local or Edge Runtime)                    │
+│             (Local + MCP Tool Support)                       │
 ├─────────────────────────────────────────────────────────────┤
 │                    CLOUD LLM MODELS                         │
 │   Qwen3 480B | GLM-4.6 | Kimi-K2 1T | DeepSeek R1/V3       │

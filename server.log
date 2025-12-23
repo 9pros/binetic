@@ -14,3 +14,88 @@ Handling OPTIONS preflight
 INFO:     185.156.46.136:0 - "OPTIONS /api/brain/stats HTTP/1.1" 204 No Content
 Request: GET /api/brain/stats
 INFO:     185.156.46.136:0 - "GET /api/brain/stats HTTP/1.1" 200 OK
+Request: OPTIONS /api/discovery/discover
+Handling OPTIONS preflight
+INFO:     185.156.46.136:0 - "OPTIONS /api/discovery/discover HTTP/1.1" 204 No Content
+Manifest discovery failed: [Errno 8] nodename nor servname provided, or not known
+Manifest discovery failed: Request URL has an unsupported protocol 'file://'.
+Request: POST /api/discovery/discover
+Request: GET /api/health
+INFO:     127.0.0.1:62740 - "GET /api/health HTTP/1.1" 200 OK
+Request: GET /api/api
+INFO:     127.0.0.1:62740 - "GET /api/api HTTP/1.1" 404 Not Found
+Request: GET /api/v1
+INFO:     127.0.0.1:62740 - "GET /api/v1 HTTP/1.1" 404 Not Found
+Request: GET /api/graphql
+INFO:     127.0.0.1:62740 - "GET /api/graphql HTTP/1.1" 404 Not Found
+Request: GET /api/rpc
+INFO:     127.0.0.1:62740 - "GET /api/rpc HTTP/1.1" 404 Not Found
+INFO:     185.156.46.136:0 - "POST /api/discovery/discover HTTP/1.1" 200 OK
+Request: OPTIONS /api/brain/think
+Handling OPTIONS preflight
+INFO:     185.156.46.136:0 - "OPTIONS /api/brain/think HTTP/1.1" 204 No Content
+Route error: 'AuthContext' object has no attribute 'key_id'
+Request: POST /api/brain/think
+INFO:     185.156.46.136:0 - "POST /api/brain/think HTTP/1.1" 500 Internal Server Error
+Request: OPTIONS /api/brain/think
+Handling OPTIONS preflight
+INFO:     185.156.46.136:0 - "OPTIONS /api/brain/think HTTP/1.1" 204 No Content
+Route error: 'AuthContext' object has no attribute 'key_id'
+Request: POST /api/brain/think
+INFO:     185.156.46.136:0 - "POST /api/brain/think HTTP/1.1" 500 Internal Server Error
+Request: GET /api
+INFO:     98.91.77.46:0 - "GET /api HTTP/1.1" 404 Not Found
+Request: OPTIONS /api/discovery/discover
+Handling OPTIONS preflight
+INFO:     185.156.46.136:0 - "OPTIONS /api/discovery/discover HTTP/1.1" 204 No Content
+Manifest discovery failed: [Errno 8] nodename nor servname provided, or not known
+Manifest discovery failed: Request URL has an unsupported protocol 'file://'.
+Request: POST /api/discovery/discover
+Request: GET /api/health
+INFO:     127.0.0.1:55916 - "GET /api/health HTTP/1.1" 200 OK
+Request: GET /api/api
+INFO:     127.0.0.1:55916 - "GET /api/api HTTP/1.1" 404 Not Found
+Request: GET /api/v1
+INFO:     127.0.0.1:55916 - "GET /api/v1 HTTP/1.1" 404 Not Found
+Request: GET /api/graphql
+INFO:     127.0.0.1:55916 - "GET /api/graphql HTTP/1.1" 404 Not Found
+Request: GET /api/rpc
+INFO:     127.0.0.1:55916 - "GET /api/rpc HTTP/1.1" 404 Not Found
+INFO:     185.156.46.136:0 - "POST /api/discovery/discover HTTP/1.1" 200 OK
+Request: GET /
+INFO:     3.224.234.70:0 - "GET / HTTP/1.1" 404 Not Found
+Request: GET /
+INFO:     3.224.234.70:0 - "GET / HTTP/1.1" 404 Not Found
+Request: OPTIONS /api/brain/stats
+Handling OPTIONS preflight
+INFO:     185.156.46.136:0 - "OPTIONS /api/brain/stats HTTP/1.1" 204 No Content
+Request: GET /api/brain/stats
+INFO:     185.156.46.136:0 - "GET /api/brain/stats HTTP/1.1" 200 OK
+Request: OPTIONS /api/discovery/discover
+Handling OPTIONS preflight
+INFO:     185.156.46.136:0 - "OPTIONS /api/discovery/discover HTTP/1.1" 204 No Content
+Manifest discovery failed: [Errno 8] nodename nor servname provided, or not known
+Manifest discovery failed: Request URL has an unsupported protocol 'file://'.
+Request: POST /api/discovery/discover
+Request: GET /api/health
+INFO:     127.0.0.1:62093 - "GET /api/health HTTP/1.1" 200 OK
+Request: GET /api/api
+INFO:     127.0.0.1:62093 - "GET /api/api HTTP/1.1" 404 Not Found
+Request: GET /api/v1
+INFO:     127.0.0.1:62093 - "GET /api/v1 HTTP/1.1" 404 Not Found
+Request: GET /api/graphql
+INFO:     127.0.0.1:62093 - "GET /api/graphql HTTP/1.1" 404 Not Found
+Request: GET /api/rpc
+INFO:     127.0.0.1:62093 - "GET /api/rpc HTTP/1.1" 404 Not Found
+INFO:     185.156.46.136:0 - "POST /api/discovery/discover HTTP/1.1" 200 OK
+Request: OPTIONS /api/brain/stats
+Handling OPTIONS preflight
+INFO:     185.156.46.136:0 - "OPTIONS /api/brain/stats HTTP/1.1" 204 No Content
+Request: GET /api/brain/stats
+INFO:     185.156.46.136:0 - "GET /api/brain/stats HTTP/1.1" 200 OK
+Request: OPTIONS /api/brain/think
+Handling OPTIONS preflight
+INFO:     185.156.46.136:0 - "OPTIONS /api/brain/think HTTP/1.1" 204 No Content
+Route error: 'AuthContext' object has no attribute 'key_id'
+Request: POST /api/brain/think
+INFO:     185.156.46.136:0 - "POST /api/brain/think HTTP/1.1" 500 Internal Server Error

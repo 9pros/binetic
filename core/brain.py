@@ -402,6 +402,37 @@ class Brain:
             "relevant_memories": len(memories),
         }
     
+    async def _learn_from_outcome(self, operator_id: str, result: Dict[str, Any]):
+        """Reinforce or correct based on operator execution result"""
+        from core.operators import get_operator_registry
+        
+        registry = get_operator_registry()
+        operator = registry.get_operator(operator_id)
+        
+        if not operator:
+            return
+
+        success = result.get("success", False) or (not result.get("error"))
+        
+        # 1. Update Operator Stats
+        # We assume latency is available or we estimate it
+        latency = result.get("latency_ms", 100.0) 
+        operator.update_stats(success=success, latency_ms=latency)
+        
+        # 2. Update Memory Patterns
+        if success:
+            # Reinforce: This operator works
+            # We assume the operator_id is used as a pattern_id or linked to one
+            await self.memtools.update_pattern_weight(operator_id, +0.05)
+        else:
+            # Correct: This operator failed
+            await self.memtools.create_correction_node(
+                trigger=result.get("input", {}),
+                avoid_operator=operator_id
+            )
+            # Penalize
+            await self.memtools.update_pattern_weight(operator_id, -0.1)
+
     async def _process_learning(self, thought: Thought) -> Any:
         """Process a learning thought"""
         self._state = BrainState.LEARNING
@@ -442,6 +473,12 @@ class Brain:
         # Store successful thought pattern
         processing_time = (thought.processed_at or time.time()) - thought.created_at
         
+        # If this was an operator execution, learn from the outcome
+        if thought.thought_type == ThoughtType.EXECUTION and thought.result:
+            operator_id = thought.content.get("operator_id")
+            if operator_id:
+                await self._learn_from_outcome(operator_id, thought.result)
+
         await self.memtools.store(
             content={
                 "thought_type": thought.thought_type.value,

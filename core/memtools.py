@@ -422,6 +422,33 @@ class MemtoolRegistry:
         memory.importance = min(1.0, memory.importance + boost)
         return True
     
+    async def update_pattern_weight(self, pattern_id: str, delta: float) -> bool:
+        """Update the success rate/weight of a pattern"""
+        if pattern_id not in self._patterns:
+            return False
+        
+        pattern = self._patterns[pattern_id]
+        # Simple moving average-ish update or direct delta
+        pattern.success_rate = max(0.0, min(1.0, pattern.success_rate + delta))
+        return True
+
+    async def create_correction_node(self, trigger: Dict[str, Any], avoid_operator: str) -> Memory:
+        """Create a negative reinforcement memory (correction node)"""
+        content = {
+            "type": "correction",
+            "trigger": trigger,
+            "avoid": avoid_operator,
+            "reason": "failure_correction"
+        }
+        
+        # Store with high importance so it's recalled
+        return await self.store(
+            content=content,
+            memory_type="correction",
+            importance=0.9,
+            tags={"correction", "learning", "negative_reinforcement"}
+        )
+
     def stats(self) -> Dict:
         """Get memory statistics"""
         return {

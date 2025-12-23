@@ -14,7 +14,28 @@
 - Clean API for frontend consumption
 
 **Start Date**: December 20, 2025
-**Status**: ✅ COMPLETE - Backend + Frontend Ready
+**Status**: ✅ COMPLETE - Backend + Frontend Ready + Intelligence Upgrade (v1.1)
+
+---
+
+## 🧠 INTELLIGENCE UPGRADE (v1.1) - Dec 22, 2025
+
+### 1. Model Context Protocol (MCP) Integration
+- **Added**: `mcp` library support in `core/discovery.py` and `core/operators.py`.
+- **Capability**: Binetic can now discover and use local tools (filesystem, CLI) via standard MCP servers.
+- **Impact**: Breaks the "sandbox" - the AGI can now interact with the host machine safely.
+
+### 2. Reinforcement Learning Loop
+- **Modified**: `core/brain.py`, `core/operators.py`, `core/memtools.py`.
+- **Logic**:
+  - **Success**: Execution boosts Operator `success_rate` and `consistency_score`.
+  - **Failure**: Creates "Correction Nodes" in memory to avoid repeating mistakes.
+- **Impact**: The system self-optimizes over time, preferring reliable operators.
+
+### 3. Discovery Bootstrap
+- **Added**: `scripts/bootstrap_discovery.py`.
+- **Result**: Successfully seeded the system with 70+ capabilities from HttpBin.
+- **Ready**: GitHub API source configured (requires key).
 
 ---
 
