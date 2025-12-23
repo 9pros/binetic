@@ -5,7 +5,8 @@ import { useTerminalStore } from '@/lib/terminal-store';
 import { Button } from '@/components/ui/button';
 import { api } from '@/lib/api-client';
 
-const PYTHON_CORE_URL = 'http://localhost:8000/api';
+// Use Cloudflare Tunnel URL to avoid Mixed Content errors (HTTPS -> HTTP)
+const PYTHON_CORE_URL = 'https://refused-care-drives-powerseller.trycloudflare.com/api';
 
 export function TerminalOverlay() {
   const { isOpen, history, toggle, addEntry, clear } = useTerminalStore();
