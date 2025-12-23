@@ -11,6 +11,24 @@ async def app(scope, receive, send):
     if scope['type'] != 'http':
         return
 
+    # Log incoming request
+    print(f"Request: {scope['method']} {scope['path']}")
+
+    # Handle CORS Preflight (OPTIONS)
+    if scope['method'] == 'OPTIONS':
+        print("Handling OPTIONS preflight")
+        await send({
+            'type': 'http.response.start',
+            'status': 204,
+            'headers': [
+                (b'access-control-allow-origin', b'*'),
+                (b'access-control-allow-methods', b'GET, POST, PUT, DELETE, OPTIONS'),
+                (b'access-control-allow-headers', b'Content-Type, Authorization, X-API-Key'),
+            ],
+        })
+        await send({'type': 'http.response.body', 'body': b''})
+        return
+
     # Create request object
     from api.routes import Request, HttpMethod, Response
     
