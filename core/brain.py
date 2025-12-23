@@ -540,7 +540,7 @@ class Brain:
             "completed_goals": len([g for g in self._goals.values() if g.is_complete]),
             "memory_stats": self.memtools.stats(),
             "network_stats": {
-                "slots": len(self.network._slots),
+                "slots": len(self.network.slots),
             },
             "discovery_stats": self.discovery.stats(),
         }

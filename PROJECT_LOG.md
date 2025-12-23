@@ -77,6 +77,34 @@ This is a **production-ready Cloudflare Workers frontend** with:
 
 ---
 
+## Session Log (December 22, 2025 - Session 4)
+
+### Completed This Session:
+1. ✅ **Backend Fixes**:
+   - Fixed `server.py` JSON scope issue and added `AuthContext` mocking for local dev.
+   - Fixed `api/routes.py` import errors (converted relative to absolute).
+   - Fixed `security/auth.py` missing `authorize` method.
+2. ✅ **Discovery Verification**:
+   - Created `scripts/verify_discovery.py`.
+   - Verified "Self Loopback" discovery (Found 1 neuron).
+3. ✅ **Deployment**:
+   - Pushed all code to GitHub.
+   - Deployed frontend to Cloudflare Workers (`bun run deploy`).
+   - **Status**: Frontend is live on Cloudflare; Backend runs locally.
+
+### Cloudflare Tunnel Setup (Session 4)
+To solve the Mixed Content issue (HTTPS Frontend -> HTTP Backend), we established a Cloudflare Tunnel:
+- **Tunnel URL**: `https://refused-care-drives-powerseller.trycloudflare.com`
+- **Frontend Config**: Updated `TerminalOverlay.tsx` to use this secure URL instead of `localhost:8000`.
+- **Result**: The deployed Cloudflare UI can now securely communicate with the local Python Brain.
+
+### Current Architecture (Hybrid):
+- **Frontend**: Hosted on Cloudflare Workers (HTTPS).
+- **Backend**: Runs locally on `localhost:8000` (HTTP).
+- **Connection**: Via Cloudflare Tunnel (`cloudflared`).
+
+---
+
 ## Previous Session Actions
 
 ### Session 2:

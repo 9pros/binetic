@@ -21,16 +21,27 @@
 
 ## 🚀 Quick Start
 
+### 1. Hybrid Development (Recommended)
+Run the frontend and backend locally to allow them to communicate (HTTP <-> HTTP).
+
 ```bash
-# Frontend (React + Cloudflare Worker)
+# Terminal 1: Python Core (The Brain)
+cd ~/binetic
+python server.py
+# Runs on http://localhost:8000
+
+# Terminal 2: Frontend (The UI)
 cd ~/binetic/frontend
 bun install
-bun dev  # Opens http://localhost:3002
-
-# Python Core
-cd ~/binetic
-python main.py
+bun dev
+# Opens http://localhost:3000
 ```
+
+### 2. Cloudflare Deployment
+The frontend is deployed to Cloudflare Workers.
+- **URL**: `https://flowgen-nexus-i4ntzzrrkhanq9se37srf.icy-water-52e5.workers.dev`
+- **Note**: The deployed UI (HTTPS) cannot connect to your local backend (HTTP) due to browser security (Mixed Content).
+- **Fix**: To use the deployed UI with your local brain, you must expose your local server via HTTPS using a tunnel (e.g., `ngrok http 8000` or `cloudflared`).
 
 ### Valid API Keys for Login
 ```

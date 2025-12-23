@@ -1,0 +1,22 @@
+2025-12-23T03:09:50Z INF Thank you for trying Cloudflare Tunnel. Doing so, without a Cloudflare account, is a quick way to experiment and try it out. However, be aware that these account-less Tunnels have no uptime guarantee, are subject to the Cloudflare Online Services Terms of Use (https://www.cloudflare.com/website-terms/), and Cloudflare reserves the right to investigate your use of Tunnels for violations of such terms. If you intend to use Tunnels in production you should use a pre-created named tunnel by following: https://developers.cloudflare.com/cloudflare-one/connections/connect-apps
+2025-12-23T03:09:50Z INF Requesting new quick Tunnel on trycloudflare.com...
+2025-12-23T03:09:54Z INF +--------------------------------------------------------------------------------------------+
+2025-12-23T03:09:54Z INF |  Your quick Tunnel has been created! Visit it at (it may take some time to be reachable):  |
+2025-12-23T03:09:54Z INF |  https://refused-care-drives-powerseller.trycloudflare.com                                 |
+2025-12-23T03:09:54Z INF +--------------------------------------------------------------------------------------------+
+2025-12-23T03:09:54Z INF Cannot determine default configuration path. No file [config.yml config.yaml] in [~/.cloudflared ~/.cloudflare-warp ~/cloudflare-warp /etc/cloudflared /usr/local/etc/cloudflared]
+2025-12-23T03:09:54Z INF Version 2025.11.1 (Checksum 53e8656c5207f9cba9ed4915ecaeffc2a8d6b401bef21e60ad543f02c135b4ae)
+2025-12-23T03:09:54Z INF GOOS: darwin, GOVersion: go1.25.4, GoArch: arm64
+2025-12-23T03:09:54Z INF Settings: map[ha-connections:1 protocol:quic url:http://localhost:8000]
+2025-12-23T03:09:54Z INF cloudflared will not automatically update if installed by a package manager.
+2025-12-23T03:09:55Z INF Generated Connector ID: d402b043-d8fc-43b4-996a-6e1b78154fbd
+2025-12-23T03:09:55Z INF Initial protocol quic
+2025-12-23T03:09:55Z INF ICMP proxy will use 10.129.204.231 as source for IPv4
+2025-12-23T03:09:55Z INF ICMP proxy will use fe80::1e1d:d3ff:fedf:159a in zone utun4 as source for IPv6
+2025-12-23T03:09:55Z INF Created ICMP proxy listening on 10.129.204.231:0
+2025-12-23T03:09:55Z ERR Cannot determine default origin certificate path. No file cert.pem in [~/.cloudflared ~/.cloudflare-warp ~/cloudflare-warp /etc/cloudflared /usr/local/etc/cloudflared]. You need to specify the origin certificate path by specifying the origincert option in the configuration file, or set TUNNEL_ORIGIN_CERT environment variable originCertPath=
+2025-12-23T03:09:55Z INF ICMP proxy will use 10.129.204.231 as source for IPv4
+2025-12-23T03:09:55Z INF ICMP proxy will use fe80::1e1d:d3ff:fedf:159a in zone utun4 as source for IPv6
+2025-12-23T03:09:55Z INF Starting metrics server on 127.0.0.1:20241/metrics
+2025-12-23T03:09:55Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveP256] connIndex=0 event=0 ip=198.41.200.73
+2025-12-23T03:09:56Z INF Registered tunnel connection connIndex=0 connection=ebd11bae-d350-43bb-b807-e87d9153b293 event=0 ip=198.41.200.73 location=iad14 protocol=quic

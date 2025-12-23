@@ -719,14 +719,14 @@ async def list_slots(request: Request) -> Response:
     from core.network import get_network
     network = get_network()
     
-    slots = list(network._slots.values())
+    slots = list(network.slots.values())
     
     return Response(body={
         "slots": [
             {
                 "slot_id": s.slot_id,
                 "state": s.state.value,
-                "operators": [o.value for o in s.operators],
+                "operators": s.operator_ids,
                 "connections": list(s.connections),
             }
             for s in slots
@@ -997,7 +997,7 @@ async def detailed_health(request: Request) -> Response:
         "status": "healthy",
         "components": {
             "brain": {"state": brain.state.value},
-            "network": {"slots": len(network._slots), "running": network._running},
+            "network": {"slots": len(network.slots), "running": network._running},
             "discovery": discovery.stats(),
         },
         "timestamp": time.time(),

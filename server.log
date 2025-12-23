@@ -1,16 +1,16 @@
-Starting Binetic Python Core on http://0.0.0.0:8000
-INFO:     Started server process [98872]
+INFO:     Started server process [31517]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
 INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+Starting Binetic Python Core on http://0.0.0.0:8000
+Request: OPTIONS /api/brain/stats
+Handling OPTIONS preflight
+INFO:     185.156.46.136:0 - "OPTIONS /api/brain/stats HTTP/1.1" 204 No Content
+Request: GET /api/brain/stats
 Registering default discovery sources...
-INFO:     127.0.0.1:65445 - "GET /api/health HTTP/1.1" 200 OK
-Manifest discovery failed: [Errno 8] nodename nor servname provided, or not known
-Manifest discovery failed: Request URL has an unsupported protocol 'file://'.
-INFO:     127.0.0.1:65447 - "GET /api/health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:65447 - "GET /api/api HTTP/1.1" 404 Not Found
-INFO:     127.0.0.1:65447 - "GET /api/v1 HTTP/1.1" 404 Not Found
-INFO:     127.0.0.1:65447 - "GET /api/graphql HTTP/1.1" 404 Not Found
-INFO:     127.0.0.1:65447 - "GET /api/rpc HTTP/1.1" 404 Not Found
-INFO:     127.0.0.1:65445 - "POST /api/discovery/discover HTTP/1.1" 200 OK
-INFO:     127.0.0.1:65445 - "GET /api/discovery/capabilities HTTP/1.1" 200 OK
+INFO:     185.156.46.136:0 - "GET /api/brain/stats HTTP/1.1" 200 OK
+Request: OPTIONS /api/brain/stats
+Handling OPTIONS preflight
+INFO:     185.156.46.136:0 - "OPTIONS /api/brain/stats HTTP/1.1" 204 No Content
+Request: GET /api/brain/stats
+INFO:     185.156.46.136:0 - "GET /api/brain/stats HTTP/1.1" 200 OK
