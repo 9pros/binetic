@@ -104,6 +104,12 @@ export async function callLLM(
   // Fallback defaults if config fails or doesn't exist
   let apiKey = provider?.apiKey || "";
   let baseURL = provider?.baseUrl || "https://apis.iflow.cn/v1";
+  
+  // Normalize Base URL
+  baseURL = baseURL.trim();
+  if (baseURL.endsWith('/')) baseURL = baseURL.slice(0, -1);
+  if (baseURL.endsWith('/chat/completions')) baseURL = baseURL.replace('/chat/completions', '');
+
   let model = provider?.defaultModelId || agent.model;
 
   // Check for agent overrides
@@ -116,8 +122,10 @@ export async function callLLM(
     return `[MOCK] ${agent.name} received your message. (Configure API Key in Settings > AI Models to enable real inference)`;
   }
 
+  const url = `${baseURL}/chat/completions`;
+
   try {
-    const response = await fetch(`${baseURL}/chat/completions`, {
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -133,7 +141,7 @@ export async function callLLM(
 
     if (!response.ok) {
       const err = await response.text();
-      throw new Error(`LLM API Error: ${response.status} ${err}`);
+      throw new Error(`LLM API Error: ${response.status} ${err} (URL: ${url})`);
     }
 
     const data = await response.json() as any;

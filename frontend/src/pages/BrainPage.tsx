@@ -152,10 +152,10 @@ export default function BrainPage() {
 
         {/* Fixed Action Bar Fallback */}
         <div className="pt-8 border-t border-white/5 flex flex-wrap gap-4 justify-center">
-          <Button variant="outline" className="border-white/10 bg-white/5 text-white hover:bg-white/10 px-8 h-12 font-bold uppercase tracking-widest text-xs">
+          <Button variant="outline" className="border-white/10 bg-transparent text-white hover:bg-white/10 px-8 h-12 font-bold uppercase tracking-widest text-xs">
             Trigger Adaptation
           </Button>
-          <Button variant="outline" className="border-white/10 bg-white/5 text-white hover:bg-white/10 px-8 h-12 font-bold uppercase tracking-widest text-xs">
+          <Button variant="outline" className="border-white/10 bg-transparent text-white hover:bg-white/10 px-8 h-12 font-bold uppercase tracking-widest text-xs">
             Global Reflection
           </Button>
           <Button variant="outline" className="border-rose-500/20 bg-rose-500/5 text-rose-400 hover:bg-rose-500/10 px-8 h-12 font-bold uppercase tracking-widest text-xs">

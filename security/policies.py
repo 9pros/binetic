@@ -12,6 +12,7 @@ import time
 import json
 import hashlib
 import logging
+import fnmatch
 
 logger = logging.getLogger(__name__)
 
@@ -117,10 +118,19 @@ class Restriction:
     
     def is_valid_ip(self, ip: str) -> bool:
         """Check if IP is allowed"""
-        if self.ip_blacklist and ip in self.ip_blacklist:
-            return False
-        if self.ip_whitelist and ip not in self.ip_whitelist:
-            return False
+        if self.ip_blacklist:
+            for blocked in self.ip_blacklist:
+                if fnmatch.fnmatch(ip, blocked):
+                    return False
+        
+        if self.ip_whitelist:
+            matched = False
+            for allowed in self.ip_whitelist:
+                if fnmatch.fnmatch(ip, allowed):
+                    matched = True
+                    break
+            if not matched:
+                return False
         return True
 
 

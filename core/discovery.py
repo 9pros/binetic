@@ -15,6 +15,16 @@ import json
 
 logger = logging.getLogger(__name__)
 
+# Try to import MCP client components
+try:
+    from mcp import ClientSession
+    from mcp.client.sse import sse_client
+    from mcp.client.stdio import stdio_client
+    MCP_AVAILABLE = True
+except ImportError:
+    MCP_AVAILABLE = False
+    logger.warning("MCP client libraries not available. MCP discovery will be disabled.")
+
 
 class CapabilityType(Enum):
     """Types of discoverable capabilities"""
@@ -38,6 +48,7 @@ class DiscoveryMethod(Enum):
     MANIFEST = "manifest"     # JSON manifest file
     DNS_SD = "dns_sd"         # DNS service discovery
     ANNOUNCEMENT = "announcement"  # Capability broadcast
+    MCP = "mcp"               # Model Context Protocol
 
 
 @dataclass
@@ -175,6 +186,8 @@ class DiscoveryEngine:
             capabilities = await self._discover_probe(source)
         elif source.discovery_method == DiscoveryMethod.MANIFEST:
             capabilities = await self._discover_manifest(source)
+        elif source.discovery_method == DiscoveryMethod.MCP:
+            capabilities = await self._discover_mcp(source)
         
         # Register discovered capabilities
         for cap in capabilities:
@@ -209,6 +222,94 @@ class DiscoveryEngine:
         logger.info(f"Discovered {len(capabilities)} capabilities from {source.name}")
         return capabilities
     
+    async def _discover_mcp(self, source: DiscoverySource) -> List[Capability]:
+        """Discover capabilities from an MCP server"""
+        if not MCP_AVAILABLE:
+            logger.error("MCP client not available")
+            return []
+
+        capabilities = []
+        
+        # Determine transport based on base_url
+        # If http/https -> SSE
+        # If not -> Stdio (command)
+        
+        try:
+            if source.base_url.startswith("http"):
+                async with sse_client(source.base_url) as (read, write):
+                    async with ClientSession(read, write) as session:
+                        await session.initialize()
+                        
+                        # List tools
+                        result = await session.list_tools()
+                        tools = result.tools
+                        
+                        for tool in tools:
+                            cap = Capability(
+                                capability_id=f"mcp-{source.source_id}-{tool.name}",
+                                name=tool.name,
+                                capability_type=CapabilityType.TOOL,
+                                endpoint=source.base_url, # Virtual endpoint
+                                method="MCP",
+                                input_schema=tool.inputSchema,
+                                description=tool.description or "",
+                                discovery_method=DiscoveryMethod.MCP,
+                                source=source.source_id,
+                                tags={"mcp", "tool"}
+                            )
+                            capabilities.append(cap)
+                            
+                        # List resources (optional, treat as DATABASE/STORAGE?)
+                        # resources = await session.list_resources()
+                        # ...
+            else:
+                # Assume command line for stdio
+                # base_url might be "npx -y @modelcontextprotocol/server-filesystem /path"
+                # We need to parse it.
+                import shutil
+                parts = source.base_url.split(" ")
+                command = parts[0]
+                args = parts[1:]
+                
+                # Security check: only allow specific commands or paths?
+                # For now, we assume the source is trusted if configured by admin.
+                
+                # We need environment variables?
+                env = None
+                if source.auth_credentials:
+                    env = source.auth_credentials
+                
+                async with stdio_client(
+                    command=command,
+                    args=args,
+                    env=env
+                ) as (read, write):
+                    async with ClientSession(read, write) as session:
+                        await session.initialize()
+                        
+                        result = await session.list_tools()
+                        tools = result.tools
+                        
+                        for tool in tools:
+                            cap = Capability(
+                                capability_id=f"mcp-{source.source_id}-{tool.name}",
+                                name=tool.name,
+                                capability_type=CapabilityType.TOOL,
+                                endpoint=source.base_url,
+                                method="MCP",
+                                input_schema=tool.inputSchema,
+                                description=tool.description or "",
+                                discovery_method=DiscoveryMethod.MCP,
+                                source=source.source_id,
+                                tags={"mcp", "tool", "stdio"}
+                            )
+                            capabilities.append(cap)
+
+        except Exception as e:
+            logger.error(f"MCP discovery failed for {source.source_id}: {e}")
+            
+        return capabilities
+
     async def _discover_openapi(self, source: DiscoverySource) -> List[Capability]:
         """Discover from OpenAPI spec"""
         capabilities = []
@@ -512,5 +613,12 @@ def get_discovery_engine() -> DiscoveryEngine:
     """Get or create global discovery engine"""
     global _engine
     if _engine is None:
-        _engine = DiscoveryEngine()
+        try:
+            import httpx
+            client = httpx.AsyncClient(timeout=10.0)
+        except ImportError:
+            client = None
+            logger.warning("httpx not installed, HTTP discovery disabled")
+            
+        _engine = DiscoveryEngine(http_client=client)
     return _engine

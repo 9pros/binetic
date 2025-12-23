@@ -11,15 +11,15 @@ import json
 import time
 import logging
 
-from ..security.auth import AuthGateway, AuthContext, require_auth
-from ..security.keys import KeyManager, KeyScope, APIKey
-from ..security.policies import PolicyEngine, Policy, Permission, PermissionLevel, ResourceType
-from ..security.sessions import SessionManager, Session
-from ..core.brain import Brain, Thought, ThoughtType, Goal
-from ..core.operators import OperatorRegistry
-from ..core.network import EmergentNetwork
-from ..core.memtools import MemtoolRegistry
-from ..core.discovery import DiscoveryEngine
+from security.auth import AuthGateway, AuthContext, require_auth
+from security.keys import KeyManager, KeyScope, APIKey
+from security.policies import PolicyEngine, Policy, Permission, PermissionLevel, ResourceType
+from security.sessions import SessionManager, Session
+from core.brain import Brain, Thought, ThoughtType, Goal
+from core.operators import OperatorRegistry
+from core.network import EmergentNetwork
+from core.memtools import MemtoolRegistry
+from core.discovery import DiscoveryEngine
 
 logger = logging.getLogger(__name__)
 
@@ -149,7 +149,7 @@ async def login(request: Request) -> Response:
     if not api_key:
         return Response(status=400, body={"error": "API key required"})
     
-    from ..security.auth import get_auth_gateway
+    from security.auth import get_auth_gateway
     gateway = get_auth_gateway()
     
     context = await gateway.authenticate(api_key)
@@ -157,7 +157,7 @@ async def login(request: Request) -> Response:
         return Response(status=401, body={"error": "Invalid API key"})
     
     # Create session
-    from ..security.sessions import get_session_manager
+    from security.sessions import get_session_manager
     sessions = get_session_manager()
     session = await sessions.create_session(
         key_id=context.key_id,
@@ -184,7 +184,7 @@ async def logout(request: Request) -> Response:
     # Delete session
     session_id = request.body.get("session_id") if request.body else None
     if session_id:
-        from ..security.sessions import get_session_manager
+        from security.sessions import get_session_manager
         sessions = get_session_manager()
         await sessions.delete_session(session_id)
     
@@ -197,7 +197,7 @@ async def refresh_token(request: Request) -> Response:
     if not request.auth_context or not request.auth_context.is_authenticated:
         return Response(status=401, body={"error": "Not authenticated"})
     
-    from ..security.auth import get_auth_gateway
+    from security.auth import get_auth_gateway
     gateway = get_auth_gateway()
     
     token = gateway.create_token(request.auth_context)
@@ -219,7 +219,7 @@ async def list_keys(request: Request) -> Response:
         return Response(status=401, body={"error": "Not authenticated"})
     
     # Check admin permission
-    from ..security.auth import get_auth_gateway
+    from security.auth import get_auth_gateway
     gateway = get_auth_gateway()
     
     if not await gateway.authorize(
@@ -230,7 +230,7 @@ async def list_keys(request: Request) -> Response:
     ):
         return Response(status=403, body={"error": "Insufficient permissions"})
     
-    from ..security.keys import get_key_manager
+    from security.keys import get_key_manager
     keys = get_key_manager()
     
     key_list = await keys.list_keys(
@@ -259,7 +259,7 @@ async def create_key(request: Request) -> Response:
     if not request.auth_context:
         return Response(status=401, body={"error": "Not authenticated"})
     
-    from ..security.auth import get_auth_gateway
+    from security.auth import get_auth_gateway
     gateway = get_auth_gateway()
     
     if not await gateway.authorize(
@@ -276,7 +276,7 @@ async def create_key(request: Request) -> Response:
     expires_days = body.get("expires_days", 365)
     metadata = body.get("metadata", {})
     
-    from ..security.keys import get_key_manager
+    from security.keys import get_key_manager
     keys = get_key_manager()
     
     key, raw_key = await keys.create_key(
@@ -305,7 +305,7 @@ async def revoke_key(request: Request) -> Response:
     
     key_id = request.path.split("/")[-1]
     
-    from ..security.auth import get_auth_gateway
+    from security.auth import get_auth_gateway
     gateway = get_auth_gateway()
     
     if not await gateway.authorize(
@@ -316,7 +316,7 @@ async def revoke_key(request: Request) -> Response:
     ):
         return Response(status=403, body={"error": "Insufficient permissions"})
     
-    from ..security.keys import get_key_manager
+    from security.keys import get_key_manager
     keys = get_key_manager()
     
     success = await keys.revoke_key(key_id)
@@ -336,7 +336,7 @@ async def list_policies(request: Request) -> Response:
     if not request.auth_context:
         return Response(status=401, body={"error": "Not authenticated"})
     
-    from ..security.auth import get_auth_gateway
+    from security.auth import get_auth_gateway
     gateway = get_auth_gateway()
     
     if not await gateway.authorize(
@@ -347,7 +347,7 @@ async def list_policies(request: Request) -> Response:
     ):
         return Response(status=403, body={"error": "Insufficient permissions"})
     
-    from ..security.policies import get_policy_engine
+    from security.policies import get_policy_engine
     policies = get_policy_engine()
     
     policy_list = list(policies._policies.values())
@@ -372,7 +372,7 @@ async def create_policy(request: Request) -> Response:
     if not request.auth_context:
         return Response(status=401, body={"error": "Not authenticated"})
     
-    from ..security.auth import get_auth_gateway
+    from security.auth import get_auth_gateway
     gateway = get_auth_gateway()
     
     if not await gateway.authorize(
@@ -400,7 +400,7 @@ async def create_policy(request: Request) -> Response:
         )
         policy.permissions.append(perm)
     
-    from ..security.policies import get_policy_engine
+    from security.policies import get_policy_engine
     policies = get_policy_engine()
     policies.register_policy(policy)
     
@@ -420,7 +420,7 @@ async def list_kernel_policies(request: Request) -> Response:
     if not request.auth_context:
         return Response(status=401, body={"error": "Not authenticated"})
 
-    from ..security.auth import get_auth_gateway
+    from security.auth import get_auth_gateway
     gateway = get_auth_gateway()
 
     allowed, _ = await gateway.check_access(
@@ -432,7 +432,7 @@ async def list_kernel_policies(request: Request) -> Response:
     if not allowed:
         return Response(status=403, body={"error": "Insufficient permissions"})
 
-    from ..security.kernel import get_kernel_enforcer
+    from security.kernel import get_kernel_enforcer
     enforcer = get_kernel_enforcer()
 
     return Response(
@@ -448,7 +448,7 @@ async def get_kernel_policy(request: Request) -> Response:
     if not request.auth_context:
         return Response(status=401, body={"error": "Not authenticated"})
 
-    from ..security.auth import get_auth_gateway
+    from security.auth import get_auth_gateway
     gateway = get_auth_gateway()
 
     allowed, _ = await gateway.check_access(
@@ -461,7 +461,7 @@ async def get_kernel_policy(request: Request) -> Response:
         return Response(status=403, body={"error": "Insufficient permissions"})
 
     policy_id = request.path.split("/")[-1]
-    from ..security.policies import get_policy_engine
+    from security.policies import get_policy_engine
     pe = get_policy_engine()
     policy = await pe.get_policy(policy_id)
     if not policy or not policy.policy_id.startswith("kpol_"):
@@ -476,7 +476,7 @@ async def create_kernel_policy(request: Request) -> Response:
     if not request.auth_context:
         return Response(status=401, body={"error": "Not authenticated"})
 
-    from ..security.auth import get_auth_gateway
+    from security.auth import get_auth_gateway
     gateway = get_auth_gateway()
 
     allowed, _ = await gateway.check_access(
@@ -527,7 +527,7 @@ async def create_kernel_policy(request: Request) -> Response:
     if "is_active" in body:
         policy.is_active = bool(body.get("is_active"))
 
-    from ..security.policies import get_policy_engine
+    from security.policies import get_policy_engine
     pe = get_policy_engine()
     pe._policies[policy.policy_id] = policy
 
@@ -540,7 +540,7 @@ async def update_kernel_policy(request: Request) -> Response:
     if not request.auth_context:
         return Response(status=401, body={"error": "Not authenticated"})
 
-    from ..security.auth import get_auth_gateway
+    from security.auth import get_auth_gateway
     gateway = get_auth_gateway()
 
     allowed, _ = await gateway.check_access(
@@ -556,7 +556,7 @@ async def update_kernel_policy(request: Request) -> Response:
     if not policy_id.startswith("kpol_"):
         return Response(status=404, body={"error": "Kernel policy not found"})
 
-    from ..security.policies import get_policy_engine
+    from security.policies import get_policy_engine
     pe = get_policy_engine()
     policy = await pe.get_policy(policy_id)
     if not policy:
@@ -602,7 +602,7 @@ async def delete_kernel_policy(request: Request) -> Response:
     if not request.auth_context:
         return Response(status=401, body={"error": "Not authenticated"})
 
-    from ..security.auth import get_auth_gateway
+    from security.auth import get_auth_gateway
     gateway = get_auth_gateway()
 
     allowed, _ = await gateway.check_access(
@@ -618,7 +618,7 @@ async def delete_kernel_policy(request: Request) -> Response:
     if not policy_id.startswith("kpol_"):
         return Response(status=404, body={"error": "Kernel policy not found"})
 
-    from ..security.policies import get_policy_engine
+    from security.policies import get_policy_engine
     pe = get_policy_engine()
     ok = await pe.delete_policy(policy_id)
     if not ok:
@@ -637,7 +637,7 @@ async def think(request: Request) -> Response:
     if not request.auth_context:
         return Response(status=401, body={"error": "Not authenticated"})
     
-    from ..security.auth import get_auth_gateway
+    from security.auth import get_auth_gateway
     gateway = get_auth_gateway()
     
     if not await gateway.authorize(
@@ -658,7 +658,7 @@ async def think(request: Request) -> Response:
         source=request.auth_context.key_id,
     )
     
-    from ..core.brain import get_brain
+    from core.brain import get_brain
     brain = await get_brain()
     
     result = await brain.think(thought)
@@ -676,7 +676,7 @@ async def brain_stats(request: Request) -> Response:
     if not request.auth_context:
         return Response(status=401, body={"error": "Not authenticated"})
     
-    from ..core.brain import get_brain
+    from core.brain import get_brain
     brain = await get_brain()
     
     return Response(body=brain.stats())
@@ -696,7 +696,7 @@ async def set_goal(request: Request) -> Response:
         priority=body.get("priority", 0.5),
     )
     
-    from ..core.brain import get_brain
+    from core.brain import get_brain
     brain = await get_brain()
     await brain.set_goal(goal)
     
@@ -716,7 +716,7 @@ async def list_slots(request: Request) -> Response:
     if not request.auth_context:
         return Response(status=401, body={"error": "Not authenticated"})
     
-    from ..core.network import get_network
+    from core.network import get_network
     network = get_network()
     
     slots = list(network._slots.values())
@@ -740,7 +740,7 @@ async def emit_signal(request: Request) -> Response:
     if not request.auth_context:
         return Response(status=401, body={"error": "Not authenticated"})
     
-    from ..security.auth import get_auth_gateway
+    from security.auth import get_auth_gateway
     gateway = get_auth_gateway()
     
     if not await gateway.authorize(
@@ -753,7 +753,7 @@ async def emit_signal(request: Request) -> Response:
     
     body = request.body or {}
     
-    from ..core.network import Signal, get_network
+    from core.network import Signal, get_network
     network = get_network()
     
     signal = Signal(
@@ -782,7 +782,7 @@ async def list_capabilities(request: Request) -> Response:
     if not request.auth_context:
         return Response(status=401, body={"error": "Not authenticated"})
     
-    from ..core.discovery import get_discovery_engine
+    from core.discovery import get_discovery_engine
     discovery = get_discovery_engine()
     
     capabilities = discovery.search_capabilities()
@@ -798,7 +798,7 @@ async def trigger_discovery(request: Request) -> Response:
     if not request.auth_context:
         return Response(status=401, body={"error": "Not authenticated"})
     
-    from ..security.auth import get_auth_gateway
+    from security.auth import get_auth_gateway
     gateway = get_auth_gateway()
     
     if not await gateway.authorize(
@@ -809,7 +809,7 @@ async def trigger_discovery(request: Request) -> Response:
     ):
         return Response(status=403, body={"error": "Insufficient permissions"})
     
-    from ..core.discovery import get_discovery_engine
+    from core.discovery import get_discovery_engine
     discovery = get_discovery_engine()
     
     results = await discovery.discover_all()
@@ -833,7 +833,7 @@ async def store_memory(request: Request) -> Response:
     
     body = request.body or {}
     
-    from ..core.memtools import get_memtools
+    from core.memtools import get_memtools
     memtools = get_memtools()
     
     memory = await memtools.store(
@@ -857,7 +857,7 @@ async def recall_memory(request: Request) -> Response:
     
     body = request.body or {}
     
-    from ..core.memtools import get_memtools
+    from core.memtools import get_memtools
     memtools = get_memtools()
     
     memories = await memtools.recall(
@@ -879,7 +879,7 @@ async def memory_stats(request: Request) -> Response:
     if not request.auth_context:
         return Response(status=401, body={"error": "Not authenticated"})
     
-    from ..core.memtools import get_memtools
+    from core.memtools import get_memtools
     memtools = get_memtools()
     
     return Response(body=memtools.stats())
@@ -895,7 +895,7 @@ async def list_operators(request: Request) -> Response:
     if not request.auth_context:
         return Response(status=401, body={"error": "Not authenticated"})
     
-    from ..core.operators import get_operator_registry
+    from core.operators import get_operator_registry
     registry = get_operator_registry()
     
     operators = list(registry._operators.keys())
@@ -911,7 +911,7 @@ async def invoke_operator(request: Request) -> Response:
     if not request.auth_context:
         return Response(status=401, body={"error": "Not authenticated"})
     
-    from ..security.auth import get_auth_gateway
+    from security.auth import get_auth_gateway
     gateway = get_auth_gateway()
     
     operator_name = request.path.split("/")[-2]
@@ -926,7 +926,7 @@ async def invoke_operator(request: Request) -> Response:
     
     body = request.body or {}
     
-    from ..core.operators import get_operator_registry
+    from core.operators import get_operator_registry
     registry = get_operator_registry()
     
     result = await registry.invoke(operator_name, body.get("input"))
@@ -947,7 +947,7 @@ async def get_audit_log(request: Request) -> Response:
     if not request.auth_context:
         return Response(status=401, body={"error": "Not authenticated"})
     
-    from ..security.auth import get_auth_gateway
+    from security.auth import get_auth_gateway
     gateway = get_auth_gateway()
     
     if not await gateway.authorize(
@@ -985,9 +985,9 @@ async def detailed_health(request: Request) -> Response:
     if not request.auth_context:
         return Response(status=401, body={"error": "Not authenticated"})
     
-    from ..core.brain import get_brain
-    from ..core.network import get_network
-    from ..core.discovery import get_discovery_engine
+    from core.brain import get_brain
+    from core.network import get_network
+    from core.discovery import get_discovery_engine
     
     brain = await get_brain()
     network = get_network()

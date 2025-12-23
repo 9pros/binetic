@@ -3,5 +3,7 @@ core
 docs
 frontend
 infra
+scripts
 security
+security-worker
 tests

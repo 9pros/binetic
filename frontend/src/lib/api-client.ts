@@ -7,14 +7,16 @@ export class ApiError extends Error {
     this.name = "ApiError";
   }
 }
-export async function api<T>(path: string, init?: RequestInit): Promise<T> {
+export async function api<T>(path: string, init?: RequestInit & { baseUrl?: string }): Promise<T> {
   const token = useAuthStore.getState().token ?? 'bnk_guest';
   const headers = new Headers(init?.headers);
   if (!headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
   }
   headers.set('Authorization', `Bearer ${token}`);
-  const response = await fetch(`${BASE_URL}${path.startsWith('/') ? path : `/${path}`}`, {
+  
+  const baseUrl = init?.baseUrl ?? BASE_URL;
+  const response = await fetch(`${baseUrl}${path.startsWith('/') ? path : `/${path}`}`, {
     ...init,
     headers,
   });

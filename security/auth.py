@@ -264,6 +264,17 @@ class AuthGateway:
             required_level,
             context={"ip": context.ip_address},
         )
+
+    async def authorize(
+        self,
+        context: AuthContext,
+        resource_type: ResourceType,
+        resource_id: Optional[str] = None,
+        required_level: PermissionLevel = PermissionLevel.READ,
+    ) -> bool:
+        """Simple authorization check returning boolean"""
+        allowed, _ = await self.check_access(context, resource_type, resource_id, required_level)
+        return allowed
     
     async def check_rate_limit(self, context: AuthContext) -> tuple[bool, str]:
         """Check if request is within rate limits"""

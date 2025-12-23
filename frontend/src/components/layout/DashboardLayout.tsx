@@ -4,6 +4,7 @@ import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/app-sidebar';
 import { Header } from '@/components/dashboard/Header';
 import { MobileNav } from '@/components/dashboard/MobileNav';
+import { TerminalOverlay } from '@/components/terminal/TerminalOverlay';
 import { useAuthStore } from '@/lib/auth-store';
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -36,6 +37,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           </main>
         </SidebarInset>
         <MobileNav />
+        <TerminalOverlay />
       </div>
     </SidebarProvider>
   );

@@ -19,6 +19,8 @@ frontend/node_modules/flatted/python/flatted.py
 infra/__init__.py
 infra/cloudflare.py
 infra/llm.py
+scripts/execute_exploration.py
+scripts/start_internet_discovery.py
 security/__init__.py
 security/auth.py
 security/kernel.py

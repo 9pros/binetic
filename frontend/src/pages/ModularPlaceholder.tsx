@@ -30,7 +30,7 @@ export default function ModularPlaceholder({ title }: ModularPlaceholderProps) {
               <ArrowLeft className="mr-2 h-4 w-4" /> Return to Mission Control
             </Link>
           </Button>
-          <Button variant="outline" className="bg-white/5 border-white/10 text-white hover:bg-white/10 font-bold px-8 h-11">
+          <Button variant="outline" className="bg-transparent border-white/10 text-white hover:bg-white/10 font-bold px-8 h-11">
             Check Sync Status
           </Button>
         </div>

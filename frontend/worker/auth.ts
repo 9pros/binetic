@@ -7,6 +7,7 @@
 
 import type { Context, Next } from 'hono';
 import type { Env } from './core-utils';
+import { PolicyEntity } from './entities';
 
 // ============================================================================
 // TYPES
@@ -104,6 +105,45 @@ export async function authMiddleware(c: Context<{ Bindings: Env }>, next: Next) 
 
   console.log(`[AUTH] Authenticated: ${keyConfig.owner} (${keyConfig.scope})`);
   
+  // Enforce IP Policies
+  const ip = c.req.header('CF-Connecting-IP') || '0.0.0.0';
+  try {
+    const { items: policies } = await PolicyEntity.list(c.env);
+    
+    for (const policy of policies) {
+      if (!policy.enabled) continue;
+      
+      // Check Blacklist
+      if (policy.restrictions.ipBlacklist?.length > 0) {
+        for (const blocked of policy.restrictions.ipBlacklist) {
+          if (matchIp(ip, blocked)) {
+             console.warn(`[AUTH] IP ${ip} blocked by policy ${policy.id} (blacklist: ${blocked})`);
+             return c.json({ success: false, error: 'Access denied by policy (IP Blocked)' }, 403);
+          }
+        }
+      }
+      
+      // Check Whitelist
+      if (policy.restrictions.ipWhitelist?.length > 0) {
+        let allowed = false;
+        for (const white of policy.restrictions.ipWhitelist) {
+          if (matchIp(ip, white)) {
+            allowed = true;
+            break;
+          }
+        }
+        if (!allowed) {
+           console.warn(`[AUTH] IP ${ip} blocked by policy ${policy.id} (not in whitelist)`);
+           return c.json({ success: false, error: 'Access denied by policy (IP not whitelisted)' }, 403);
+        }
+      }
+    }
+  } catch (e) {
+    console.error('[AUTH] Policy check failed:', e);
+    // Fail closed
+    return c.json({ success: false, error: 'Policy enforcement error' }, 500);
+  }
+
   await next();
 }
 
@@ -255,4 +295,15 @@ export async function callSecurityWorker(env: Env, path: string, method: string 
   }
   
   return res.json();
+}
+
+/**
+ * Helper to match IP against wildcard patterns
+ * Supports * for any substring
+ */
+function matchIp(ip: string, pattern: string): boolean {
+  if (pattern === '*') return true;
+  // Escape dots, replace * with .*
+  const regexStr = '^' + pattern.replace(/\./g, '\\.').replace(/\*/g, '.*') + '$';
+  return new RegExp(regexStr).test(ip);
 }

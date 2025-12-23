@@ -710,7 +710,7 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
   app.post('/api/config', async (c) => {
     const data = await c.req.json();
     const config = new SystemConfigEntity(c.env, 'sys-config');
-    await config.ensure();
+    await SystemConfigEntity.ensureSeed(c.env);
     const current = await config.getState();
     await config.save({ ...current, ...data });
     return ok(c, await config.getState());

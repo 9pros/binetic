@@ -207,6 +207,11 @@ class EmergentNetwork:
         self._tasks.clear()
         logger.info("Emergent network stopped")
     
+    def register_slot(self, slot: ReactiveSlot):
+        """Register an existing slot instance"""
+        self.slots[slot.slot_id] = slot
+        logger.info(f"Registered slot: {slot.slot_id}")
+
     async def create_slot(
         self,
         slot_type: str = "generic",

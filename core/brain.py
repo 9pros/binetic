@@ -11,10 +11,10 @@ import time
 import logging
 import asyncio
 
-from .operators import OperatorRegistry, OperatorType, get_operator_registry
+from .operators import OperatorRegistry, OperatorType, OperatorSignature, get_operator_registry
 from .network import EmergentNetwork, ReactiveSlot, Signal, get_network
 from .memtools import MemtoolRegistry, get_memtools
-from .discovery import DiscoveryEngine, Capability, get_discovery_engine
+from .discovery import DiscoveryEngine, Capability, CapabilityType, get_discovery_engine
 
 logger = logging.getLogger(__name__)
 
@@ -121,6 +121,9 @@ class Brain:
         """Initialize the brain and all subsystems"""
         logger.info("Brain initializing...")
         
+        # Register discovery hook to promote capabilities to operators
+        self.discovery.on_discovery(self._on_capability_discovered)
+        
         # Start network signal processing
         await self.network.start()
         
@@ -133,27 +136,80 @@ class Brain:
         self._state = BrainState.READY
         logger.info("Brain ready")
     
+    async def _on_capability_discovered(self, capability: Capability):
+        """Promote discovered capability to operator with semantic abstraction"""
+        # Only promote executable capabilities
+        if capability.capability_type not in [CapabilityType.TOOL, CapabilityType.FUNCTION, CapabilityType.REST_API]:
+            return
+
+        # Abstraction: Convert raw capability to logical operator
+        # 1. Heuristic Classification (Fast System 1)
+        op_type = OperatorType.COMPUTE # Default
+        side_effects = True
+        
+        name_lower = capability.name.lower()
+        desc_lower = capability.description.lower()
+        
+        if "search" in name_lower or "find" in name_lower or "query" in name_lower:
+            op_type = OperatorType.SEARCH
+            side_effects = False
+        elif "store" in name_lower or "save" in name_lower or "write" in name_lower or "upload" in name_lower:
+            op_type = OperatorType.STORE
+            side_effects = True
+        elif "read" in name_lower or "get" in name_lower or "fetch" in name_lower or "download" in name_lower:
+            op_type = OperatorType.RETRIEVE
+            side_effects = False
+        elif "send" in name_lower or "notify" in name_lower or "broadcast" in name_lower:
+            op_type = OperatorType.BROADCAST
+            side_effects = True
+        elif "embed" in name_lower:
+            op_type = OperatorType.EMBED
+            side_effects = False
+            
+        # 2. Semantic Refinement (System 2 - Future: Use LLM here)
+        # If we had an active LLM operator, we would ask it to verify this classification.
+        
+        # Create OperatorSignature
+        op = OperatorSignature(
+            operator_id=capability.capability_id,
+            operator_type=op_type,
+            endpoint_url=capability.endpoint,
+            method=capability.method,
+            request_template=capability.input_schema,
+            response_schema=capability.output_schema,
+            discovered_at=capability.discovered_at,
+            side_effects=side_effects,
+            headers={
+                "x-source": capability.source, 
+                "x-discovery-method": capability.discovery_method.value,
+                "x-tool-name": capability.name
+            }
+        )
+        
+        await self.operators.register(op)
+        logger.info(f"Abstracted {capability.name} -> {op.operator_type.value} (Side Effects: {side_effects})")
+
     async def _create_core_slots(self):
         """Create core processing slots"""
         
         # Query processing slot
         query_slot = ReactiveSlot(slot_id="brain_query")
-        query_slot.operators = [OperatorType.FILTER, OperatorType.MAP, OperatorType.REDUCE]
+        query_slot.operators = [OperatorType.FILTER, OperatorType.TRANSFORM, OperatorType.AGGREGATE]
         self.network.register_slot(query_slot)
         
         # Command execution slot
         command_slot = ReactiveSlot(slot_id="brain_command")
-        command_slot.operators = [OperatorType.VALIDATE, OperatorType.EXECUTE]
+        command_slot.operators = [OperatorType.FILTER, OperatorType.COMPUTE]
         self.network.register_slot(command_slot)
         
         # Learning slot
         learning_slot = ReactiveSlot(slot_id="brain_learning")
-        learning_slot.operators = [OperatorType.OBSERVE, OperatorType.ANALYZE]
+        learning_slot.operators = [OperatorType.RETRIEVE, OperatorType.INFER]
         self.network.register_slot(learning_slot)
         
         # Connect slots
-        self.network.connect("brain_query", "brain_learning")
-        self.network.connect("brain_command", "brain_learning")
+        await self.network.connect_slots("brain_query", "brain_learning")
+        await self.network.connect_slots("brain_command", "brain_learning")
     
     async def think(self, thought: Thought) -> Any:
         """Process a thought"""

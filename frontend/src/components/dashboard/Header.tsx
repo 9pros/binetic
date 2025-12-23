@@ -11,7 +11,8 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import { SidebarTrigger } from '@/components/ui/sidebar';
-import { Bell, Search, Plus, Power, RefreshCw, ChevronDown } from 'lucide-react';
+import { Bell, Search, Plus, Power, RefreshCw, ChevronDown, Terminal } from 'lucide-react';
+import { useTerminalStore } from '@/lib/terminal-store';
 const PATH_MAP: Record<string, string> = {
   '/': 'Mission Control',
   '/network': 'Neural Topology',
@@ -27,6 +28,7 @@ const PATH_MAP: Record<string, string> = {
 export function Header() {
   const location = useLocation();
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const { toggle: toggleTerminal, isOpen: isTerminalOpen } = useTerminalStore();
   const pageTitle = PATH_MAP[location.pathname] || 'Nexus Hub';
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -56,6 +58,15 @@ export function Header() {
       </div>
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-1 mr-2">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className={`h-9 w-9 transition-colors ${isTerminalOpen ? 'text-cyan-400 bg-cyan-400/10' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}
+            onClick={toggleTerminal}
+            title="Toggle System Terminal"
+          >
+            <Terminal className="h-5 w-5" />
+          </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" className="bg-indigo-600/10 border-indigo-500/20 text-indigo-400 hover:bg-indigo-600/20 h-9">

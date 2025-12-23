@@ -16,6 +16,15 @@ import asyncio
 import aiohttp
 import logging
 
+# Try to import MCP client components
+try:
+    from mcp import ClientSession
+    from mcp.client.sse import sse_client
+    from mcp.client.stdio import stdio_client
+    MCP_AVAILABLE = True
+except ImportError:
+    MCP_AVAILABLE = False
+
 logger = logging.getLogger(__name__)
 
 
@@ -216,38 +225,54 @@ class OperatorRegistry:
             # Build request from template
             request_body = self._build_request(operator, inputs)
             
-            async with aiohttp.ClientSession() as session:
-                if operator.method.upper() == "GET":
-                    async with session.get(
-                        operator.endpoint_url,
-                        params=request_body,
-                        headers=operator.headers,
-                        timeout=aiohttp.ClientTimeout(total=timeout),
-                    ) as resp:
-                        status = resp.status
-                        try:
-                            body = await resp.json()
-                        except:
-                            body = await resp.text()
-                else:
-                    async with session.post(
-                        operator.endpoint_url,
-                        json=request_body,
-                        headers=operator.headers,
-                        timeout=aiohttp.ClientTimeout(total=timeout),
-                    ) as resp:
-                        status = resp.status
-                        try:
-                            body = await resp.json()
-                        except:
-                            body = await resp.text()
+            if operator.method == "MCP":
+                if not MCP_AVAILABLE:
+                    invocation.success = False
+                    invocation.error = "MCP client not available"
+                    return invocation
                 
-                invocation.latency_ms = (time.time() - start_time) * 1000
-                invocation.success = 200 <= status < 300
-                invocation.outputs = self._extract_outputs(operator, body)
+                try:
+                    result = await self._invoke_mcp(operator, request_body, timeout)
+                    invocation.latency_ms = (time.time() - start_time) * 1000
+                    invocation.success = True
+                    invocation.outputs = result
+                except Exception as e:
+                    invocation.latency_ms = (time.time() - start_time) * 1000
+                    invocation.success = False
+                    invocation.error = str(e)
+            else:
+                async with aiohttp.ClientSession() as session:
+                    if operator.method.upper() == "GET":
+                        async with session.get(
+                            operator.endpoint_url,
+                            params=request_body,
+                            headers=operator.headers,
+                            timeout=aiohttp.ClientTimeout(total=timeout),
+                        ) as resp:
+                            status = resp.status
+                            try:
+                                body = await resp.json()
+                            except:
+                                body = await resp.text()
+                    else:
+                        async with session.post(
+                            operator.endpoint_url,
+                            json=request_body,
+                            headers=operator.headers,
+                            timeout=aiohttp.ClientTimeout(total=timeout),
+                        ) as resp:
+                            status = resp.status
+                            try:
+                                body = await resp.json()
+                            except:
+                                body = await resp.text()
+                    
+                    invocation.latency_ms = (time.time() - start_time) * 1000
+                    invocation.success = 200 <= status < 300
+                    invocation.outputs = self._extract_outputs(operator, body)
                 
-                # Update operator stats
-                await self._update_stats(operator, invocation)
+            # Update operator stats
+            await self._update_stats(operator, invocation)
                 
         except asyncio.TimeoutError:
             invocation.latency_ms = timeout * 1000
@@ -261,6 +286,41 @@ class OperatorRegistry:
         self._invocation_history.append(invocation)
         return invocation
     
+    async def _invoke_mcp(self, operator: OperatorSignature, inputs: Dict[str, Any], timeout: float) -> Dict[str, Any]:
+        """Invoke an MCP tool"""
+        # Import here to avoid circular dependency
+        from core.discovery import get_discovery_engine
+        
+        source_id = operator.headers.get("x-source")
+        tool_name = operator.headers.get("x-tool-name")
+        
+        if not source_id or not tool_name:
+            raise ValueError("Missing x-source or x-tool-name header for MCP operator")
+            
+        engine = get_discovery_engine()
+        source = engine._sources.get(source_id)
+        if not source:
+            raise ValueError(f"Discovery source {source_id} not found")
+            
+        # Connection logic
+        if source.base_url.startswith("http"):
+             async with sse_client(source.base_url) as (read, write):
+                async with ClientSession(read, write) as session:
+                    await session.initialize()
+                    result = await session.call_tool(tool_name, inputs)
+                    return {"content": [c.text if hasattr(c, 'text') else str(c) for c in result.content]}
+        else:
+            parts = source.base_url.split(" ")
+            command = parts[0]
+            args = parts[1:]
+            env = source.auth_credentials
+            
+            async with stdio_client(command, args, env) as (read, write):
+                async with ClientSession(read, write) as session:
+                    await session.initialize()
+                    result = await session.call_tool(tool_name, inputs)
+                    return {"content": [c.text if hasattr(c, 'text') else str(c) for c in result.content]}
+
     def _build_request(self, operator: OperatorSignature, inputs: Dict[str, Any]) -> Dict[str, Any]:
         """Build request body from template and inputs"""
         request = dict(operator.request_template)

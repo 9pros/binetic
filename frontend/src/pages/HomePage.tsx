@@ -129,10 +129,10 @@ export function HomePage() {
                   <Button className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold h-12 justify-between px-6 shadow-glow">
                     <span className="flex items-center"><Plus className="mr-3 h-5 w-5" /> PROVISION ACCESS KEY</span>
                   </Button>
-                  <Button variant="outline" className="w-full bg-white/5 border-white/10 text-white hover:bg-white/10 font-bold h-12 justify-start px-6">
+                  <Button variant="outline" className="w-full bg-transparent border-white/10 text-white hover:bg-white/10 font-bold h-12 justify-start px-6">
                     <Target className="mr-3 h-5 w-5 text-emerald-400" /> DEFINE COGNITIVE GOAL
                   </Button>
-                  <Button variant="outline" className="w-full bg-white/5 border-white/10 text-white hover:bg-white/10 font-bold h-12 justify-start px-6">
+                  <Button variant="outline" className="w-full bg-transparent border-white/10 text-white hover:bg-white/10 font-bold h-12 justify-start px-6">
                     <Search className="mr-3 h-5 w-5 text-indigo-400" /> RUN NODE DISCOVERY
                   </Button>
                 </div>
